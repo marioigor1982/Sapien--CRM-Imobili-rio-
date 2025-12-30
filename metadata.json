@@ -1,0 +1,5 @@
+{
+  "name": "Sapien CRM - Sistema Imobiliário",
+  "description": "A robust real estate CRM inspired by SAP, featuring lead management with Kanban and list views, CRUD for clients, brokers, properties, and a sales pipeline.",
+  "requestFramePermissions": []
+}

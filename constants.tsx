@@ -1,0 +1,63 @@
+
+import React from 'react';
+import { LayoutDashboard, Trello, List, Users, Briefcase, Home, Landmark, Building2 } from 'lucide-react';
+import { Client, Broker, Property, Bank, ConstructionCompany, Lead, LeadPhase, ViewType } from './types';
+
+export const INITIAL_CLIENTS: Client[] = [
+  { id: 'c1', name: 'João Silva', taxId: '123.456.789-00', phone: '(11) 98888-7777', email: 'joao@email.com', income: 8500, status: 'Ativo' },
+  { id: 'c2', name: 'Maria Santos', taxId: '987.654.321-11', phone: '(11) 97777-6666', email: 'maria@email.com', income: 12000, status: 'Ativo' },
+];
+
+export const INITIAL_BROKERS: Broker[] = [
+  { id: 'br1', name: 'Ricardo Corretor', creci: '12345-F', phone: '(11) 91234-5678', email: 'ricardo@sapien.com' },
+];
+
+export const INITIAL_COMPANIES: ConstructionCompany[] = [
+  { id: 'co1', name: 'Gafisa', cnpj: '01.234.567/0001-99', contact: 'contato@gafisa.com.br' },
+];
+
+export const INITIAL_PROPERTIES: Property[] = [
+  { id: 'p1', title: 'Residencial Horizonte', type: 'Apartamento', value: 450000, address: 'Rua das Flores, 123', photos: ['https://picsum.photos/400/300'], constructionCompanyId: 'co1' },
+];
+
+export const INITIAL_BANKS: Bank[] = [
+  { id: 'b1', name: 'Caixa Econômica', avgRate: 9.5, contact: 'gerente.caixa@caixa.gov.br' },
+  { id: 'b2', name: 'Itaú', avgRate: 10.2, contact: 'agencia@itau.com.br' },
+];
+
+export const INITIAL_LEADS: Lead[] = [
+  { 
+    id: 'l1', 
+    clientId: 'c1', 
+    brokerId: 'br1', 
+    propertyId: 'p1', 
+    bankId: 'b1', 
+    constructionCompanyId: 'co1', 
+    currentPhase: LeadPhase.ABERTURA_CREDITO, 
+    createdAt: new Date().toISOString(),
+    history: [{ phase: LeadPhase.ABERTURA_CREDITO, date: new Date().toISOString() }]
+  },
+  { 
+    id: 'l2', 
+    clientId: 'c2', 
+    brokerId: 'br1', 
+    propertyId: 'p1', 
+    bankId: 'b2', 
+    constructionCompanyId: 'co1', 
+    currentPhase: LeadPhase.VISITA_IMOVEL, 
+    createdAt: new Date().toISOString(),
+    history: [{ phase: LeadPhase.ABERTURA_CREDITO, date: new Date().toISOString() }]
+  }
+];
+
+export const MENU_ITEMS = [
+  { id: 'Dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
+  { id: 'Kanban', label: 'Pipeline (Kanban)', icon: <Trello size={20} /> },
+  { id: 'List', label: 'Lista de Leads', icon: <List size={20} /> },
+  { type: 'divider' },
+  { id: 'Clients', label: 'Clientes', icon: <Users size={20} /> },
+  { id: 'Brokers', label: 'Corretores', icon: <Briefcase size={20} /> },
+  { id: 'Properties', label: 'Imóveis', icon: <Home size={20} /> },
+  { id: 'Banks', label: 'Bancos', icon: <Landmark size={20} /> },
+  { id: 'Companies', label: 'Construtoras', icon: <Building2 size={20} /> },
+];
