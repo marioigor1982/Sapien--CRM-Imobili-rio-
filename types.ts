@@ -50,6 +50,7 @@ export interface Bank {
   name: string;
   avgRate: number;
   contact: string;
+  logo?: string;
 }
 
 export interface ConstructionCompany {

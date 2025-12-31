@@ -6,6 +6,15 @@ interface LoginProps {
   onLogin: () => void;
 }
 
+const SapienLogoLarge = ({ className }: { className?: string }) => (
+  <img 
+    src="https://i.postimg.cc/NLXBjNHq/file-00000000731471f5848228adbf7dd9f0-(1).png" 
+    alt="Sapien CRM Logo" 
+    className={className}
+    style={{ objectFit: 'contain', imageRendering: 'auto' }}
+  />
+);
+
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#1F1F1F] via-[#4A4A4A] to-[#8B0000] p-6">
@@ -13,10 +22,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         {/* Glassmorphism card */}
         <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-10 shadow-2xl border border-white/20 text-white">
           <div className="flex flex-col items-center mb-8">
-            <div className="w-20 h-20 bg-gradient-to-br from-[#8B0000] to-red-500 rounded-2xl flex items-center justify-center shadow-lg mb-6 rotate-3 transform hover:rotate-0 transition-transform duration-500">
-              <span className="text-4xl font-black italic">S</span>
+            <div className="w-32 h-32 flex items-center justify-center mb-6 transform hover:scale-105 transition-transform duration-500 overflow-hidden">
+              <SapienLogoLarge className="w-full h-full" />
             </div>
-            <h1 className="text-3xl font-black tracking-tighter mb-1">SAPIEN CRM</h1>
+            <h1 className="text-4xl font-black tracking-tighter mb-1">SAPIEN</h1>
+            <h2 className="text-2xl font-bold tracking-widest text-white/90 mb-2">CRM</h2>
             <p className="text-gray-300 text-sm font-medium uppercase tracking-[0.2em]">Inteligência Imobiliária</p>
           </div>
 
@@ -51,7 +61,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
             <button 
               type="submit"
-              className="w-full bg-gradient-to-r from-[#8B0000] to-red-600 text-white font-bold py-4 rounded-xl shadow-xl shadow-red-900/20 hover:shadow-red-900/40 transform hover:-translate-y-0.5 transition-all active:scale-95 flex items-center justify-center space-x-3"
+              className="w-full bg-gradient-to-r from-[#D40000] to-red-600 text-white font-bold py-4 rounded-xl shadow-xl shadow-red-900/20 hover:shadow-red-900/40 transform hover:-translate-y-0.5 transition-all active:scale-95 flex items-center justify-center space-x-3"
             >
               <LogIn size={20} />
               <span>ENTRAR NO SISTEMA</span>
@@ -67,7 +77,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         </div>
 
         {/* Floating background elements */}
-        <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-[#8B0000]/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-[#D40000]/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-red-900/10 rounded-full blur-3xl pointer-events-none" />
       </div>
     </div>

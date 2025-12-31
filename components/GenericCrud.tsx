@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, Search, X } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Plus, Edit2, Trash2, Search, X, Image as ImageIcon, Upload, Link as LinkIcon, Eye, MapPin, Building2, Tag, Landmark } from 'lucide-react';
 
 interface GenericCrudProps {
   title: string;
@@ -13,8 +13,12 @@ interface GenericCrudProps {
 const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, companies }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [viewingItem, setViewingItem] = useState<any>(null);
   const [formData, setFormData] = useState<any>({});
+  const [newPhotoUrl, setNewPhotoUrl] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDelete = (id: string) => {
     if (confirm('Tem certeza que deseja excluir este registro?')) {
@@ -28,14 +32,19 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
       setFormData({ ...item });
     } else {
       setEditingItem(null);
-      // Initialize with default values
       const defaults: any = { id: Math.random().toString(36).substr(2, 9) };
       if (type === 'client') { defaults.status = 'Ativo'; defaults.income = 0; }
-      if (type === 'bank') { defaults.avgRate = 0; }
+      if (type === 'bank') { defaults.avgRate = 0; defaults.logo = ''; }
       if (type === 'property') { defaults.value = 0; defaults.photos = []; }
       setFormData(defaults);
     }
+    setNewPhotoUrl('');
     setIsModalOpen(true);
+  };
+
+  const handleOpenViewModal = (item: any) => {
+    setViewingItem(item);
+    setIsViewModalOpen(true);
   };
 
   const handleSave = (e: React.FormEvent) => {
@@ -48,6 +57,42 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
     setIsModalOpen(false);
   };
 
+  const handleAddPhotoUrl = () => {
+    if (newPhotoUrl.trim()) {
+      if (type === 'bank') {
+        setFormData({ ...formData, logo: newPhotoUrl.trim() });
+      } else {
+        const currentPhotos = formData.photos || [];
+        setFormData({ ...formData, photos: [...currentPhotos, newPhotoUrl.trim()] });
+      }
+      setNewPhotoUrl('');
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        if (type === 'bank') {
+          setFormData({ ...formData, logo: base64String });
+        } else {
+          const currentPhotos = formData.photos || [];
+          setFormData({ ...formData, photos: [...currentPhotos, base64String] });
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removePhoto = (index: number) => {
+    const currentPhotos = [...(formData.photos || [])];
+    currentPhotos.splice(index, 1);
+    setFormData({ ...formData, photos: currentPhotos });
+  };
+
   const filteredData = data.filter(item => {
     const values = Object.values(item).join(' ').toLowerCase();
     return values.includes(searchTerm.toLowerCase());
@@ -58,7 +103,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
       case 'client': return ['Nome', 'Documento', 'Telefone', 'Email', 'Renda', 'Status'];
       case 'broker': return ['Nome', 'CRECI', 'Telefone', 'Email'];
       case 'property': return ['Título', 'Tipo', 'Valor', 'Endereço'];
-      case 'bank': return ['Banco', 'Taxa Média', 'Contato'];
+      case 'bank': return ['Logo', 'Banco', 'Taxa Média', 'Contato'];
       case 'company': return ['Nome', 'CNPJ', 'Contato'];
       default: return [];
     }
@@ -68,7 +113,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
     switch(type) {
       case 'client': return (
         <>
-          <td className="px-6 py-4 font-semibold">{item.name}</td>
+          <td className="px-6 py-4 font-semibold hover:text-[#8B0000] cursor-pointer" onClick={() => handleOpenViewModal(item)}>{item.name}</td>
           <td className="px-6 py-4 text-gray-500">{item.taxId}</td>
           <td className="px-6 py-4 text-gray-500">{item.phone}</td>
           <td className="px-6 py-4 text-gray-500">{item.email}</td>
@@ -82,7 +127,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
       );
       case 'broker': return (
         <>
-          <td className="px-6 py-4 font-semibold">{item.name}</td>
+          <td className="px-6 py-4 font-semibold hover:text-[#8B0000] cursor-pointer" onClick={() => handleOpenViewModal(item)}>{item.name}</td>
           <td className="px-6 py-4 text-gray-500">{item.creci}</td>
           <td className="px-6 py-4 text-gray-500">{item.phone}</td>
           <td className="px-6 py-4 text-gray-500">{item.email}</td>
@@ -90,7 +135,18 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
       );
       case 'property': return (
         <>
-          <td className="px-6 py-4 font-semibold">{item.title}</td>
+          <td className="px-6 py-4 font-semibold">
+            <div className="flex items-center space-x-3 cursor-pointer group" onClick={() => handleOpenViewModal(item)}>
+              <div className="w-10 h-10 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 shrink-0">
+                {item.photos?.[0] ? (
+                  <img src={item.photos[0]} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-300"><ImageIcon size={16} /></div>
+                )}
+              </div>
+              <span className="group-hover:text-[#8B0000] transition-colors">{item.title}</span>
+            </div>
+          </td>
           <td className="px-6 py-4 text-gray-500">{item.type}</td>
           <td className="px-6 py-4 font-bold text-[#8B0000]">R$ {Number(item.value).toLocaleString()}</td>
           <td className="px-6 py-4 text-gray-500 truncate max-w-xs">{item.address}</td>
@@ -98,14 +154,23 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
       );
       case 'bank': return (
         <>
-          <td className="px-6 py-4 font-semibold">{item.name}</td>
+          <td className="px-6 py-4">
+            <div className="w-10 h-10 bg-white rounded-lg border border-gray-100 p-1 flex items-center justify-center shadow-sm">
+              {item.logo ? (
+                <img src={item.logo} alt="" className="max-w-full max-h-full object-contain" />
+              ) : (
+                <Landmark size={18} className="text-gray-300" />
+              )}
+            </div>
+          </td>
+          <td className="px-6 py-4 font-semibold hover:text-[#8B0000] cursor-pointer" onClick={() => handleOpenViewModal(item)}>{item.name}</td>
           <td className="px-6 py-4 text-gray-900 font-bold">{item.avgRate}%</td>
           <td className="px-6 py-4 text-gray-500">{item.contact}</td>
         </>
       );
       case 'company': return (
         <>
-          <td className="px-6 py-4 font-semibold">{item.name}</td>
+          <td className="px-6 py-4 font-semibold hover:text-[#8B0000] cursor-pointer" onClick={() => handleOpenViewModal(item)}>{item.name}</td>
           <td className="px-6 py-4 text-gray-500">{item.cnpj}</td>
           <td className="px-6 py-4 text-gray-500">{item.contact}</td>
         </>
@@ -127,11 +192,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
             <InputField label="Renda (Mensal)" type="number" value={formData.income} onChange={v => setFormData({...formData, income: v})} />
             <div className="space-y-1">
               <label className="text-xs font-bold text-gray-500 uppercase">Status</label>
-              <select 
-                className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none"
-                value={formData.status}
-                onChange={e => setFormData({...formData, status: e.target.value})}
-              >
+              <select className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
                 <option value="Ativo">Ativo</option>
                 <option value="Inativo">Inativo</option>
               </select>
@@ -153,11 +214,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-xs font-bold text-gray-500 uppercase">Tipo</label>
-              <select 
-                className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none"
-                value={formData.type}
-                onChange={e => setFormData({...formData, type: e.target.value})}
-              >
+              <select className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
                 <option value="Casa">Casa</option>
                 <option value="Apartamento">Apartamento</option>
                 <option value="Terreno">Terreno</option>
@@ -168,14 +225,34 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
           <InputField label="Endereço Completo" value={formData.address} onChange={v => setFormData({...formData, address: v})} />
           <div className="space-y-1">
             <label className="text-xs font-bold text-gray-500 uppercase">Construtora</label>
-            <select 
-              className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none"
-              value={formData.constructionCompanyId}
-              onChange={e => setFormData({...formData, constructionCompanyId: e.target.value})}
-            >
+            <select className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none" value={formData.constructionCompanyId} onChange={e => setFormData({...formData, constructionCompanyId: e.target.value})}>
               <option value="">Selecione...</option>
               {companies?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
+          </div>
+          <div className="space-y-3 pt-4 border-t border-gray-100">
+            <label className="text-xs font-bold text-gray-500 uppercase flex items-center"><ImageIcon size={14} className="mr-2" />Gestão de Fotos</label>
+            <div className="flex flex-col space-y-3">
+              <div className="flex space-x-2">
+                <div className="relative flex-1">
+                  <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                  <input type="text" placeholder="Colar URL..." className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#8B0000]" value={newPhotoUrl} onChange={e => setNewPhotoUrl(e.target.value)} />
+                </div>
+                <button type="button" onClick={handleAddPhotoUrl} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-200 transition-colors">Add</button>
+                <button type="button" onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-[#8B0000]/10 text-[#8B0000] rounded-lg text-sm font-bold hover:bg-[#8B0000]/20 transition-colors flex items-center space-x-2"><Upload size={14} /><span>Upload</span></button>
+                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
+              </div>
+              {formData.photos && formData.photos.length > 0 && (
+                <div className="grid grid-cols-4 gap-2 mt-2">
+                  {formData.photos.map((url: string, idx: number) => (
+                    <div key={idx} className="relative group aspect-square rounded-lg overflow-hidden border border-gray-200">
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                      <button type="button" onClick={() => removePhoto(idx)} className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={10} /></button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </>
       );
@@ -184,6 +261,23 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
           <InputField label="Nome do Banco" value={formData.name} onChange={v => setFormData({...formData, name: v})} />
           <InputField label="Taxa Média (%)" type="number" step="0.01" value={formData.avgRate} onChange={v => setFormData({...formData, avgRate: v})} />
           <InputField label="Contato / Gerente" value={formData.contact} onChange={v => setFormData({...formData, contact: v})} />
+          <div className="space-y-3 pt-4 border-t border-gray-100">
+            <label className="text-xs font-bold text-gray-500 uppercase flex items-center"><LinkIcon size={14} className="mr-2" />Logomarca do Banco</label>
+            <div className="flex space-x-2">
+              <div className="relative flex-1">
+                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                <input type="text" placeholder="URL da logomarca..." className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#8B0000]" value={formData.logo || ''} onChange={e => setFormData({...formData, logo: e.target.value})} />
+              </div>
+              <button type="button" onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-[#8B0000]/10 text-[#8B0000] rounded-lg text-sm font-bold hover:bg-[#8B0000]/20 transition-colors flex items-center space-x-2"><Upload size={14} /><span>Upload</span></button>
+              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
+            </div>
+            {formData.logo && (
+              <div className="mt-2 w-20 h-20 bg-white rounded-xl border border-gray-200 p-2 flex items-center justify-center shadow-sm relative group">
+                <img src={formData.logo} alt="Preview" className="max-w-full max-h-full object-contain" />
+                <button type="button" onClick={() => setFormData({...formData, logo: ''})} className="absolute -top-2 -right-2 bg-red-600 text-white p-1 rounded-full shadow-lg"><X size={12} /></button>
+              </div>
+            )}
+          </div>
         </>
       );
       case 'company': return (
@@ -196,26 +290,93 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
     }
   };
 
+  const renderViewDetails = () => {
+    if (!viewingItem) return null;
+
+    if (type === 'property') {
+      const company = companies?.find(c => c.id === viewingItem.constructionCompanyId);
+      return (
+        <div className="space-y-6">
+          <div className="bg-gray-50 -mx-6 -mt-6 p-6 border-b border-gray-200">
+            {viewingItem.photos && viewingItem.photos.length > 0 ? (
+              <div className="grid grid-cols-2 gap-4 h-64">
+                <div className="h-full rounded-xl overflow-hidden shadow-lg">
+                  <img src={viewingItem.photos[0]} alt="" className="w-full h-full object-cover" />
+                </div>
+                <div className="grid grid-rows-2 gap-4 h-full">
+                  {viewingItem.photos.slice(1, 3).map((p: string, i: number) => (
+                    <div key={i} className="rounded-xl overflow-hidden shadow-md">
+                      <img src={p} alt="" className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+                  {viewingItem.photos.length <= 1 && <div className="bg-gray-200 rounded-xl flex items-center justify-center text-gray-400 font-bold uppercase text-[10px]">Sem fotos adicionais</div>}
+                </div>
+              </div>
+            ) : (
+              <div className="h-48 bg-gray-200 rounded-xl flex items-center justify-center text-gray-400">
+                <ImageIcon size={48} />
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-2xl font-bold text-gray-900">{viewingItem.title}</h4>
+                <div className="flex items-center text-gray-500 mt-1">
+                  <MapPin size={16} className="mr-1 text-red-500" />
+                  <span className="text-sm">{viewingItem.address}</span>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold uppercase tracking-wider">{viewingItem.type}</span>
+                {company && <span className="px-3 py-1 bg-[#8B0000]/10 text-[#8B0000] rounded-full text-xs font-bold uppercase tracking-wider">{company.name}</span>}
+              </div>
+            </div>
+            <div className="bg-[#8B0000] text-white p-6 rounded-2xl shadow-xl flex flex-col justify-center">
+              <span className="text-xs uppercase font-bold tracking-widest opacity-80 mb-1">Valor do Imóvel</span>
+              <div className="text-3xl font-black">R$ {Number(viewingItem.value).toLocaleString('pt-BR')}</div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4 pt-4">
+             <DetailCard icon={<Building2 size={18} />} label="Construtora" value={company?.name || 'N/A'} />
+             <DetailCard icon={<Tag size={18} />} label="Código SAP" value={viewingItem.id.toUpperCase()} />
+             <DetailCard icon={<ImageIcon size={18} />} label="Total Mídias" value={`${viewingItem.photos?.length || 0} Fotos`} />
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {type === 'bank' && viewingItem.logo && (
+          <div className="flex justify-center mb-6">
+            <div className="w-24 h-24 bg-white rounded-2xl border border-gray-100 p-4 shadow-md flex items-center justify-center">
+              <img src={viewingItem.logo} alt={viewingItem.name} className="max-w-full max-h-full object-contain" />
+            </div>
+          </div>
+        )}
+        {Object.entries(viewingItem).map(([key, value]) => (
+          key !== 'id' && key !== 'photos' && key !== 'logo' && (
+            <div key={key} className="border-b border-gray-50 pb-2">
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{key}</label>
+              <p className="text-gray-900 font-medium">{String(value)}</p>
+            </div>
+          )
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-          <input 
-            type="text" 
-            placeholder={`Buscar em ${title.toLowerCase()}...`}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B0000] w-full md:w-80"
-          />
+          <input type="text" placeholder={`Buscar em ${title.toLowerCase()}...`} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B0000] w-full md:w-80" />
         </div>
-        <button 
-          onClick={() => handleOpenModal()}
-          className="bg-[#8B0000] text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2 font-bold shadow-md hover:bg-[#6b0000] transition-colors"
-        >
-          <Plus size={18} />
-          <span>Cadastrar {title.slice(0, -1)}</span>
-        </button>
+        <button onClick={() => handleOpenModal()} className="bg-[#8B0000] text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2 font-bold shadow-md hover:bg-[#6b0000] transition-colors"><Plus size={18} /><span>Cadastrar {title.slice(0, -1)}</span></button>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -235,18 +396,9 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
                   {renderRow(item)}
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end space-x-2">
-                      <button 
-                        onClick={() => handleOpenModal(item)}
-                        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(item.id)}
-                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      <button onClick={() => handleOpenViewModal(item)} className="p-1.5 text-gray-400 hover:text-[#8B0000] hover:bg-red-50 rounded transition-all"><Eye size={16} /></button>
+                      <button onClick={() => handleOpenModal(item)} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all"><Edit2 size={16} /></button>
+                      <button onClick={() => handleDelete(item.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"><Trash2 size={16} /></button>
                     </div>
                   </td>
                 </tr>
@@ -254,38 +406,40 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
             </tbody>
           </table>
         </div>
-        {filteredData.length === 0 && (
-          <div className="py-20 text-center">
-            <p className="text-gray-400">Nenhum registro encontrado.</p>
-          </div>
-        )}
+        {filteredData.length === 0 && <div className="py-20 text-center"><p className="text-gray-400">Nenhum registro encontrado.</p></div>}
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="bg-[#8B0000] px-6 py-4 flex items-center justify-between text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg my-8 overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="bg-[#8B0000] px-6 py-4 flex items-center justify-between text-white sticky top-0 z-10">
               <h3 className="font-bold uppercase tracking-widest text-sm">{editingItem ? 'Editar' : 'Cadastrar'} {title.slice(0, -1)}</h3>
               <button onClick={() => setIsModalOpen(false)} className="hover:rotate-90 transition-transform"><X size={20} /></button>
             </div>
-            <form onSubmit={handleSave} className="p-6 space-y-4">
+            <form onSubmit={handleSave} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
               {renderFormFields()}
-              <div className="flex justify-end space-x-3 mt-8">
-                <button 
-                  type="button" 
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-6 py-2 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-100 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  type="submit" 
-                  className="px-6 py-2 bg-[#8B0000] text-white rounded-lg text-sm font-bold shadow-md hover:bg-[#6b0000] transition-colors"
-                >
-                  Salvar Registro
-                </button>
+              <div className="flex justify-end space-x-3 mt-8 pt-4 border-t border-gray-100">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-100 transition-colors">Cancelar</button>
+                <button type="submit" className="px-6 py-2 bg-[#8B0000] text-white rounded-lg text-sm font-bold shadow-md hover:bg-[#6b0000] transition-colors">Salvar Registro</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {isViewModalOpen && viewingItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl my-8 overflow-hidden animate-in fade-in zoom-in duration-300">
+             <div className="p-6">
+                <div className="flex justify-end mb-2">
+                   <button onClick={() => setIsViewModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X size={24} className="text-gray-400" /></button>
+                </div>
+                {renderViewDetails()}
+             </div>
+             <div className="bg-gray-50 px-6 py-4 flex justify-between items-center border-t border-gray-100">
+                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">Sapien Intelligence Real Estate OS</span>
+                <button onClick={() => { setIsViewModalOpen(false); handleOpenModal(viewingItem); }} className="text-sm font-bold text-[#8B0000] hover:underline flex items-center"><Edit2 size={14} className="mr-2" />Editar Informações</button>
+             </div>
           </div>
         </div>
       )}
@@ -296,13 +450,15 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
 const InputField: React.FC<{ label: string; value: any; onChange: (v: string) => void; type?: string; step?: string }> = ({ label, value, onChange, type = "text", step }) => (
   <div className="space-y-1">
     <label className="text-xs font-bold text-gray-500 uppercase">{label}</label>
-    <input 
-      type={type} 
-      step={step}
-      value={value || ''} 
-      onChange={e => onChange(e.target.value)}
-      className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none"
-    />
+    <input type={type} step={step} value={value || ''} onChange={e => onChange(e.target.value)} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none" />
+  </div>
+);
+
+const DetailCard: React.FC<{ icon: React.ReactNode, label: string, value: string }> = ({ icon, label, value }) => (
+  <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+    <div className="text-[#8B0000] mb-2 opacity-80">{icon}</div>
+    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{label}</div>
+    <div className="text-sm font-bold text-gray-900 truncate">{value}</div>
   </div>
 );
 

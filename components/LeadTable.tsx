@@ -14,10 +14,11 @@ interface LeadTableProps {
   onAddLead: () => void;
   onEditLead: (lead: Lead) => void;
   onDeleteLead: (id: string) => void;
+  onViewLead?: (lead: Lead) => void;
 }
 
 const LeadTable: React.FC<LeadTableProps> = ({ 
-  leads, clients, brokers, properties, updatePhase, onAddLead, onEditLead, onDeleteLead
+  leads, clients, brokers, properties, updatePhase, onAddLead, onEditLead, onDeleteLead, onViewLead
 }) => {
   const getPhaseColor = (phase: LeadPhase) => {
     switch (phase) {
@@ -74,10 +75,10 @@ const LeadTable: React.FC<LeadTableProps> = ({
                 const progress = Math.round(((phaseIndex + 1) / PHASES_ORDER.length) * 100);
 
                 return (
-                  <tr key={lead.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-6 py-4">
+                  <tr key={lead.id} className="hover:bg-gray-50/50 transition-colors group">
+                    <td className="px-6 py-4 cursor-pointer" onClick={() => onViewLead?.(lead)}>
                       <div className="flex flex-col">
-                        <span className="font-semibold text-gray-900">{client?.name || 'Cliente não definido'}</span>
+                        <span className="font-semibold text-gray-900 group-hover:text-[#8B0000] transition-colors">{client?.name || 'Cliente não definido'}</span>
                         <span className="text-[10px] text-gray-400 font-bold uppercase">{client?.taxId || 'Sem CPF/CNPJ'}</span>
                       </div>
                     </td>
@@ -113,7 +114,14 @@ const LeadTable: React.FC<LeadTableProps> = ({
                       <span className="text-sm text-gray-600 whitespace-nowrap">{broker?.name || '-'}</span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end space-x-2">
+                      <div className="flex items-center justify-end space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => onViewLead?.(lead)}
+                          className="p-1.5 text-gray-400 hover:text-[#8B0000] hover:bg-red-50 rounded transition-all"
+                          title="Ver Detalhes"
+                        >
+                          <Eye size={18} />
+                        </button>
                         {phaseIndex < PHASES_ORDER.length - 1 && (
                           <button 
                             onClick={() => updatePhase(lead.id, PHASES_ORDER[phaseIndex + 1])}

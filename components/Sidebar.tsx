@@ -10,12 +10,21 @@ interface SidebarProps {
   onLogout: () => void;
 }
 
+const SapienLogo = ({ className }: { className?: string }) => (
+  <img 
+    src="https://i.postimg.cc/NLXBjNHq/file-00000000731471f5848228adbf7dd9f0-(1).png" 
+    alt="Sapien CRM Logo" 
+    className={className}
+    style={{ objectFit: 'contain', imageRendering: 'auto' }}
+  />
+);
+
 const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, menuItems, onLogout }) => {
   return (
     <aside className="w-64 bg-[#1F1F1F] text-white flex flex-col shadow-2xl z-20">
       <div className="p-6 flex items-center space-x-3 border-b border-gray-800">
-        <div className="w-10 h-10 bg-[#8B0000] rounded-lg flex items-center justify-center shadow-lg">
-          <span className="text-xl font-bold italic">S</span>
+        <div className="w-14 h-14 flex items-center justify-center overflow-hidden">
+          <SapienLogo className="w-full h-full" />
         </div>
         <div>
           <h1 className="text-lg font-bold tracking-tight">SAPIEN CRM</h1>

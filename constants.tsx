@@ -17,12 +17,24 @@ export const INITIAL_COMPANIES: ConstructionCompany[] = [
 ];
 
 export const INITIAL_PROPERTIES: Property[] = [
-  { id: 'p1', title: 'Residencial Horizonte', type: 'Apartamento', value: 450000, address: 'Rua das Flores, 123', photos: ['https://picsum.photos/400/300'], constructionCompanyId: 'co1' },
+  { id: 'p1', title: 'Residencial Horizonte', type: 'Apartamento', value: 450000, address: 'Rua das Flores, 123', photos: ['https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&q=80&w=400'], constructionCompanyId: 'co1' },
 ];
 
 export const INITIAL_BANKS: Bank[] = [
-  { id: 'b1', name: 'Caixa Econômica', avgRate: 9.5, contact: 'gerente.caixa@caixa.gov.br' },
-  { id: 'b2', name: 'Itaú', avgRate: 10.2, contact: 'agencia@itau.com.br' },
+  { 
+    id: 'b1', 
+    name: 'Caixa Econômica', 
+    avgRate: 9.5, 
+    contact: 'gerente.caixa@caixa.gov.br',
+    logo: 'https://images.seeklogo.com/logo-png/2/1/caixa-economica-federal-logo-png_seeklogo-24768.png'
+  },
+  { 
+    id: 'b2', 
+    name: 'Itaú', 
+    avgRate: 10.2, 
+    contact: 'agencia@itau.com.br',
+    logo: 'https://images.seeklogo.com/logo-png/51/1/itau-logo-png_seeklogo-512719.png'
+  },
 ];
 
 export const INITIAL_LEADS: Lead[] = [

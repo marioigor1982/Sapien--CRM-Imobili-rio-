@@ -15,13 +15,15 @@ import KanbanBoard from './components/KanbanBoard';
 import LeadTable from './components/LeadTable';
 import Login from './components/Login';
 import GenericCrud from './components/GenericCrud';
-import { X } from 'lucide-react';
+import { X, User, Home, Landmark, Briefcase, Calendar, Clock, Edit2, ImageIcon } from 'lucide-react';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentView, setCurrentView] = useState<ViewType>('Dashboard');
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
+  const [isLeadViewOpen, setIsLeadViewOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const [viewingLead, setViewingLead] = useState<Lead | null>(null);
   
   // Persistence Layer Simulation
   const [clients, setClients] = useState<Client[]>(() => {
@@ -74,6 +76,12 @@ const App: React.FC = () => {
   const openLeadModal = (lead: Lead | null = null) => {
     setEditingLead(lead);
     setIsLeadModalOpen(true);
+    setIsLeadViewOpen(false);
+  };
+
+  const openLeadView = (lead: Lead) => {
+    setViewingLead(lead);
+    setIsLeadViewOpen(true);
   };
 
   const saveLead = (leadData: Partial<Lead>) => {
@@ -115,6 +123,7 @@ const App: React.FC = () => {
             updatePhase={handleUpdateLeadPhase}
             onAddLead={() => openLeadModal()}
             onEditLead={(l) => openLeadModal(l)}
+            onViewLead={(l) => openLeadView(l)}
           />
         );
       case 'List':
@@ -130,6 +139,7 @@ const App: React.FC = () => {
             onAddLead={() => openLeadModal()}
             onEditLead={(l) => openLeadModal(l)}
             onDeleteLead={(id) => setLeads(leads.filter(l => l.id !== id))}
+            onViewLead={(l) => openLeadView(l)}
           />
         );
       case 'Clients':
@@ -180,9 +190,23 @@ const App: React.FC = () => {
           companies={companies}
         />
       )}
+
+      {isLeadViewOpen && viewingLead && (
+        <LeadDetailsModal 
+          lead={viewingLead}
+          onClose={() => setIsLeadViewOpen(false)}
+          onEdit={() => openLeadModal(viewingLead)}
+          clients={clients}
+          brokers={brokers}
+          properties={properties}
+          banks={banks}
+        />
+      )}
     </div>
   );
 };
+
+// --- MODALS ---
 
 interface LeadModalProps {
   lead: Lead | null;
@@ -255,6 +279,149 @@ const LeadModal: React.FC<LeadModalProps> = ({ lead, onClose, onSave, clients, b
             <button type="submit" className="px-6 py-2 bg-[#8B0000] text-white rounded-lg text-sm font-bold shadow-md hover:bg-[#6b0000] transition-colors">Salvar Lead</button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+};
+
+interface LeadDetailsModalProps {
+  lead: Lead;
+  onClose: () => void;
+  onEdit: () => void;
+  clients: Client[];
+  brokers: Broker[];
+  properties: Property[];
+  banks: Bank[];
+}
+
+const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({ lead, onClose, onEdit, clients, brokers, properties, banks }) => {
+  const client = clients.find(c => c.id === lead.clientId);
+  const property = properties.find(p => p.id === lead.propertyId);
+  const broker = brokers.find(b => b.id === lead.brokerId);
+  const bank = banks.find(b => b.id === lead.bankId);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md overflow-y-auto">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl my-8 overflow-hidden animate-in fade-in zoom-in duration-300">
+        <div className="p-8">
+          <div className="flex justify-between items-start mb-8">
+            <div className="space-y-1">
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#8B0000] bg-red-50 px-2 py-1 rounded">Lead Insights</span>
+              <h2 className="text-3xl font-black text-gray-900 leading-tight mt-2">{client?.name || 'Cliente Sem Nome'}</h2>
+              <div className="flex items-center space-x-4 text-sm text-gray-500">
+                <span className="font-bold">{client?.taxId}</span>
+                <span className="w-1.5 h-1.5 bg-gray-300 rounded-full" />
+                <span>{client?.email}</span>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400"><X size={24} /></button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Esquerda: Info Principal */}
+            <div className="space-y-6">
+              <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 relative overflow-hidden group">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1 pr-4">
+                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center">
+                      <Home size={12} className="mr-1" /> Imóvel Pretendido
+                    </h4>
+                    <p className="font-bold text-gray-900 text-lg mb-1">{property?.title || 'Nenhum imóvel vinculado'}</p>
+                    <p className="text-sm text-gray-500 mb-2">{property?.address}</p>
+                    <div className="text-2xl font-black text-[#8B0000]">
+                      {property ? `R$ ${property.value.toLocaleString()}` : 'R$ 0,00'}
+                    </div>
+                  </div>
+                  
+                  {/* Miniatura da Foto do Imóvel */}
+                  <div className="shrink-0">
+                    <div className="w-24 h-24 rounded-xl border-2 border-white shadow-md overflow-hidden bg-white group-hover:scale-110 transition-transform duration-300">
+                      {property?.photos?.[0] ? (
+                        <img src={property.photos[0]} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-200">
+                          <Home size={32} />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Background Decorativo */}
+                <Home size={60} className="absolute -right-6 -bottom-6 text-gray-200 opacity-20 group-hover:text-[#8B0000]/10 transition-colors pointer-events-none" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                  <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center">
+                    <Briefcase size={12} className="mr-1" /> Corretor
+                  </h4>
+                  <p className="text-sm font-bold text-gray-900">{broker?.name || 'Pendente'}</p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                   <div className="flex justify-between items-start mb-2">
+                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center">
+                      <Landmark size={12} className="mr-1" /> Banco
+                    </h4>
+                    {bank?.logo && (
+                      <div className="w-8 h-8 bg-white rounded-lg p-1 shadow-sm border border-gray-100 flex items-center justify-center">
+                        <img src={bank.logo} alt={bank.name} className="max-w-full max-h-full object-contain" />
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-sm font-bold text-gray-900">{bank?.name || 'Pendente'}</p>
+                  {bank && <p className="text-[10px] font-bold text-[#8B0000]">{bank.avgRate}% Taxa Média</p>}
+                </div>
+              </div>
+
+              <div className="p-4 bg-red-50 rounded-xl border border-red-100">
+                <h4 className="text-[10px] font-bold text-red-700 uppercase tracking-widest mb-2">Status Financeiro</h4>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-red-900/60">Renda Mensal:</span>
+                  <span className="font-bold text-red-900">R$ {client?.income.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Direita: Timeline */}
+            <div className="space-y-4">
+              <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center">
+                <Clock size={12} className="mr-1" /> Timeline do Lead
+              </h4>
+              <div className="relative pl-6 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-100">
+                {lead.history.slice().reverse().map((h, i) => (
+                  <div key={i} className="relative">
+                    <div className={`absolute -left-[21px] top-1 w-3 h-3 rounded-full border-2 border-white ${i === 0 ? 'bg-[#8B0000] scale-125 shadow-lg' : 'bg-gray-300'}`} />
+                    <div className="space-y-1">
+                      <p className={`text-xs font-bold uppercase tracking-wide ${i === 0 ? 'text-[#8B0000]' : 'text-gray-500'}`}>
+                        {h.phase}
+                      </p>
+                      <div className="flex items-center text-[10px] text-gray-400">
+                        <Calendar size={10} className="mr-1" />
+                        {new Date(h.date).toLocaleDateString()} às {new Date(h.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-10 pt-6 border-t border-gray-100 flex justify-between items-center">
+            <div className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">
+              ID: {lead.id.toUpperCase()}
+            </div>
+            <div className="flex space-x-3">
+              <button 
+                onClick={onEdit} 
+                className="flex items-center space-x-2 px-6 py-2 bg-[#8B0000] text-white rounded-lg font-bold text-sm shadow-lg hover:bg-[#6b0000] transition-all"
+              >
+                <Edit2 size={16} />
+                <span>Editar Informações</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
