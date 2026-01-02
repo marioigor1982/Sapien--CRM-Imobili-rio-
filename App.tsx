@@ -18,7 +18,7 @@ import {
   clientService, brokerService, propertyService, 
   bankService, companyService, leadService 
 } from './dataService';
-import { X, User, Home, Landmark, Briefcase, Calendar, Clock, Edit2, Trash2, Image as ImageIcon } from 'lucide-react';
+import { X, User, Home, Landmark, Briefcase, Calendar, Clock, Edit2, Trash2, Image as ImageIcon, DollarSign, Building2 } from 'lucide-react';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -229,9 +229,15 @@ const LeadDetailsModal: React.FC<any> = ({ lead, onClose, onEdit, onDelete, clie
   const broker = brokers.find((b: any) => b.id === lead.brokerId);
   const bank = banks.find((b: any) => b.id === lead.bankId);
 
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+  };
+
+  const commissionValue = broker && property ? (Number(property.value) * Number(broker.commissionRate)) / 100 : 0;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md overflow-y-auto">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl my-8 overflow-hidden animate-in fade-in zoom-in duration-300">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl my-8 overflow-hidden animate-in fade-in zoom-in duration-300">
         <div className="p-8">
           <div className="flex justify-between items-start mb-6">
             <div>
@@ -241,56 +247,108 @@ const LeadDetailsModal: React.FC<any> = ({ lead, onClose, onEdit, onDelete, clie
             <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 transition-colors"><X size={24} /></button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-6">
               {/* Property Image Section */}
-              <div className="w-full aspect-video rounded-2xl overflow-hidden bg-gray-100 shadow-lg border border-gray-100">
+              <div className="w-full aspect-video rounded-2xl overflow-hidden bg-gray-100 shadow-lg border border-gray-100 relative group">
                 {property?.photos?.[0] ? (
-                  <img src={property.photos[0]} alt={property.title} className="w-full h-full object-cover" />
+                  <img src={property.photos[0]} alt={property.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-300">
                     <ImageIcon size={48} strokeWidth={1} />
                   </div>
                 )}
+                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-gray-200 flex items-center space-x-2 shadow-sm">
+                   <Home size={14} className="text-[#8B0000]" />
+                   <span className="text-[10px] font-black uppercase tracking-widest text-gray-900">{property?.type || 'Imóvel'}</span>
+                </div>
               </div>
 
               <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
                 <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Imóvel</h4>
-                <p className="font-bold text-gray-900 text-lg line-clamp-2">{property?.title || 'Não vinculado'}</p>
-                <p className="text-2xl font-black text-[#8B0000] mt-2">
-                  {property ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(property.value) : 'R$ 0,00'}
+                <p className="font-bold text-gray-900 text-lg line-clamp-2 leading-tight mb-2">{property?.title || 'Não vinculado'}</p>
+                <p className="text-2xl font-black text-[#8B0000]">
+                  {property ? formatCurrency(property.value) : 'R$ 0,00'}
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                  <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Corretor</h4>
-                  <p className="text-sm font-bold text-gray-900 truncate">{broker?.name || 'Não atribuído'}</p>
+              {/* Enhanced Broker and Bank Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Broker Info */}
+                <div className="p-5 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center space-x-2 mb-2">
+                       <Briefcase size={14} className="text-blue-500" />
+                       <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Corretor</h4>
+                    </div>
+                    <p className="text-sm font-bold text-gray-900 leading-tight mb-2 break-words">
+                      {broker?.name || 'Não atribuído'}
+                    </p>
+                  </div>
+                  {broker && (
+                    <div className="pt-2 border-t border-gray-50 mt-auto">
+                       <div className="flex justify-between items-center">
+                          <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Comissão {broker.commissionRate}%</span>
+                          <span className="text-xs font-black text-green-600">{formatCurrency(commissionValue)}</span>
+                       </div>
+                    </div>
+                  )}
                 </div>
-                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                  <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Banco</h4>
-                  <p className="text-sm font-bold text-gray-900 truncate">{bank?.name || 'Não definido'}</p>
+
+                {/* Bank Info */}
+                <div className="p-5 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
+                  <div className="flex flex-col h-full">
+                    <div className="flex items-center space-x-2 mb-2">
+                       <Landmark size={14} className="text-gray-400" />
+                       <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Banco</h4>
+                    </div>
+                    <div className="flex items-start space-x-3 mt-1 flex-1">
+                      {bank?.logo && (
+                        <div className="w-10 h-10 shrink-0 border border-gray-100 rounded-lg p-1 bg-white flex items-center justify-center overflow-hidden">
+                          <img src={bank.logo} alt={bank.name} className="max-w-full max-h-full object-contain" />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <p className="text-sm font-bold text-gray-900 leading-tight">{bank?.name || 'Não definido'}</p>
+                        <p className="text-[10px] text-gray-500 font-bold uppercase mt-1">AG: {bank?.agency || '----'}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
             <div className="space-y-4">
-              <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Histórico do Pipeline</h4>
-              <div className="relative pl-6 space-y-6 border-l-2 border-gray-100 ml-2">
+              <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center">
+                <Clock size={14} className="mr-2" /> Histórico do Pipeline
+              </h4>
+              <div className="relative pl-6 space-y-6 border-l-2 border-gray-100 ml-2 py-2 max-h-[500px] overflow-y-auto pr-2 scrollbar-hide">
                 {lead.history?.slice().reverse().map((h: any, i: number) => (
-                  <div key={i} className="relative">
-                    <div className={`absolute -left-[31px] top-1 w-3 h-3 rounded-full border-2 border-white shadow-sm ${i === 0 ? 'bg-[#8B0000]' : 'bg-gray-300'}`} />
+                  <div key={i} className="relative animate-in slide-in-from-left duration-300" style={{ animationDelay: `${i * 100}ms` }}>
+                    <div className={`absolute -left-[31px] top-1 w-3 h-3 rounded-full border-2 border-white shadow-sm transition-colors ${i === 0 ? 'bg-[#8B0000]' : 'bg-gray-300'}`} />
                     <p className={`text-xs font-bold uppercase ${i === 0 ? 'text-[#8B0000]' : 'text-gray-500'}`}>{h.phase}</p>
-                    <p className="text-[10px] text-gray-400 font-medium">{new Date(h.date).toLocaleDateString()} às {new Date(h.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                    <p className="text-[10px] text-gray-400 font-medium">
+                      {new Date(h.date).toLocaleDateString()} às {new Date(h.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    </p>
                   </div>
                 ))}
               </div>
             </div>
           </div>
 
-          <div className="mt-10 pt-6 border-t border-gray-100 flex justify-end space-x-3">
-            <button onClick={onDelete} className="px-6 py-2 border border-red-200 text-red-600 rounded-lg font-bold text-xs uppercase tracking-widest hover:bg-red-50 transition-colors">Excluir</button>
-            <button onClick={onEdit} className="px-6 py-2 bg-[#8B0000] text-white rounded-lg font-bold text-xs uppercase tracking-widest shadow-md hover:bg-[#6b0000] transition-colors">Editar Dados</button>
+          <div className="mt-10 pt-6 border-t border-gray-100 flex flex-wrap gap-3 justify-end">
+            <button 
+              onClick={onDelete} 
+              className="px-6 py-2.5 border border-red-200 text-red-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-red-50 transition-all flex items-center"
+            >
+              <Trash2 size={14} className="mr-2" /> Excluir Lead
+            </button>
+            <button 
+              onClick={onEdit} 
+              className="px-8 py-2.5 bg-[#8B0000] text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg hover:bg-[#6b0000] hover:scale-105 transition-all flex items-center"
+            >
+              <Edit2 size={14} className="mr-2" /> Editar Dados
+            </button>
           </div>
         </div>
       </div>
