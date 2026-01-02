@@ -9,7 +9,7 @@ export const INITIAL_CLIENTS: Client[] = [
 ];
 
 export const INITIAL_BROKERS: Broker[] = [
-  { id: 'br1', name: 'Ricardo Corretor', creci: '12345-F', phone: '(11) 91234-5678', email: 'ricardo@sapien.com' },
+  { id: 'br1', name: 'Ricardo Corretor', creci: '12345-F', phone: '(11) 91234-5678', email: 'ricardo@sapien.com', commissionRate: 1.5 },
 ];
 
 export const INITIAL_COMPANIES: ConstructionCompany[] = [

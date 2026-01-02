@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
 } from 'recharts';
-import { TrendingUp, Users, Home, Activity } from 'lucide-react';
+import { TrendingUp, Users, Home, Activity, CreditCard } from 'lucide-react';
 
 interface DashboardProps {
   leads: Lead[];
@@ -21,13 +21,19 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, clients, properties }) => 
 
   const COLORS = ['#8B0000', '#C0C0C0', '#4A4A4A', '#D1D5DB', '#6B7280', '#1F1F1F'];
 
-  // Nova lógica: Somar apenas leads na fase de "Aprovação de Crédito"
-  const totalValueInNegotiation = leads
-    .filter(l => l.currentPhase === LeadPhase.APROVACAO_CREDITO)
-    .reduce((acc, lead) => {
-      const prop = properties.find(p => p.id === lead.propertyId);
-      return acc + (prop?.value || 0);
-    }, 0);
+  // Métricas Abertura de Crédito (Fase Inicial)
+  const leadsInAbertura = leads.filter(l => l.currentPhase === LeadPhase.ABERTURA_CREDITO);
+  const totalValueAbertura = leadsInAbertura.reduce((acc, lead) => {
+    const prop = properties.find(p => p.id === lead.propertyId);
+    return acc + (prop?.value || 0);
+  }, 0);
+
+  // Valor em Aprovação: Soma de todos os leads APÓS a Abertura de Crédito
+  const leadsEmAprovacao = leads.filter(l => l.currentPhase !== LeadPhase.ABERTURA_CREDITO);
+  const totalValueEmAprovacao = leadsEmAprovacao.reduce((acc, lead) => {
+    const prop = properties.find(p => p.id === lead.propertyId);
+    return acc + (prop?.value || 0);
+  }, 0);
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
@@ -36,43 +42,44 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, clients, properties }) => 
   return (
     <div className="space-y-6">
       {/* Cards de Métricas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard 
           label="Total de Leads" 
           value={leads.length} 
           icon={<Activity className="text-blue-500" />} 
-          trend="+12% este mês" 
+          trend="Volume de pipeline" 
         />
         <MetricCard 
-          label="Clientes Ativos" 
-          value={clients.filter(c => c.status === 'Ativo').length} 
-          icon={<Users className="text-green-500" />} 
-          trend="+5 novos" 
-        />
-        <MetricCard 
-          label="Imóveis no Portfólio" 
-          value={properties.length} 
-          icon={<Home className="text-purple-500" />} 
-          trend="Atualizado hoje" 
+          label="Abertura de Crédito" 
+          value={formatCurrency(totalValueAbertura)} 
+          subValue={`${leadsInAbertura.length} leads ativos`}
+          icon={<CreditCard className="text-gray-400" />} 
+          trend="Fase inicial" 
         />
         <MetricCard 
           label="Valor em Aprovação" 
-          value={formatCurrency(totalValueInNegotiation)} 
+          value={formatCurrency(totalValueEmAprovacao)} 
+          subValue={`${leadsEmAprovacao.length} leads avançados`}
           icon={<TrendingUp className="text-[#8B0000]" />} 
-          trend="Fase: Apr. de Crédito" 
+          trend="Pós-Abertura" 
+        />
+        <MetricCard 
+          label="Imóveis Ativos" 
+          value={properties.length} 
+          icon={<Home className="text-purple-500" />} 
+          trend="Portfólio Sapien" 
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Gráfico de Barras - Fases */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold text-gray-800 mb-6">Leads por Fase</h3>
+          <h3 className="text-lg font-bold text-gray-800 mb-6 uppercase tracking-wider text-xs">Distribuição por Fase</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={phaseStats} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
                 <XAxis type="number" hide />
-                <YAxis dataKey="name" type="category" width={150} tick={{fontSize: 12}} />
+                <YAxis dataKey="name" type="category" width={150} tick={{fontSize: 10, fontWeight: 'bold'}} />
                 <Tooltip 
                   cursor={{fill: '#f4f6f8'}} 
                   contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} 
@@ -83,10 +90,9 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, clients, properties }) => 
           </div>
         </div>
 
-        {/* Gráfico de Rosca - Conversão */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold text-gray-800 mb-6">Distribuição de Status</h3>
-          <div className="h-64 flex items-center justify-center">
+          <h3 className="text-lg font-bold text-gray-800 mb-6 uppercase tracking-wider text-xs">Ocupação do Funil</h3>
+          <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -103,7 +109,7 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, clients, properties }) => 
                   ))}
                 </Pie>
                 <Tooltip />
-                <Legend layout="vertical" align="right" verticalAlign="middle" />
+                <Legend layout="horizontal" align="center" verticalAlign="bottom" iconType="circle" />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -113,14 +119,15 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, clients, properties }) => 
   );
 };
 
-const MetricCard: React.FC<{ label: string, value: string | number, icon: React.ReactNode, trend: string }> = ({ label, value, icon, trend }) => (
-  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+const MetricCard: React.FC<{ label: string, value: string | number, subValue?: string, icon: React.ReactNode, trend: string }> = ({ label, value, subValue, icon, trend }) => (
+  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow group">
     <div className="flex items-center justify-between mb-4">
-      <div className="p-3 bg-gray-50 rounded-lg">{icon}</div>
-      <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded">{trend}</span>
+      <div className="p-3 bg-gray-50 rounded-lg group-hover:bg-red-50 transition-colors">{icon}</div>
+      <span className="text-[10px] font-black text-[#8B0000] bg-red-50 px-2 py-1 rounded uppercase tracking-tighter">{trend}</span>
     </div>
-    <h4 className="text-2xl font-bold text-gray-900">{value}</h4>
-    <p className="text-sm text-gray-500 font-medium">{label}</p>
+    <h4 className="text-xl font-black text-gray-900 truncate">{value}</h4>
+    {subValue && <p className="text-[10px] font-bold text-gray-400 uppercase mt-1">{subValue}</p>}
+    <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-2">{label}</p>
   </div>
 );
 

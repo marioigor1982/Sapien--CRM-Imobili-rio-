@@ -1,10 +1,11 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { 
   Plus, Edit2, Trash2, Search, X, Image as ImageIcon, 
   Upload, Link as LinkIcon, Eye, MapPin, Building2, 
-  Tag, Landmark, Phone, Mail, Globe, Briefcase 
+  Tag, Landmark, Phone, Mail, Globe, Briefcase, DollarSign, CheckCircle, Clock
 } from 'lucide-react';
+import { LeadPhase } from '../types';
 
 interface GenericCrudProps {
   title: string;
@@ -24,6 +25,17 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
   const [newPhotoUrl, setNewPhotoUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Simulation of leads for commission calculation
+  const leads = useMemo(() => {
+    const saved = localStorage.getItem('sapien_leads');
+    return saved ? JSON.parse(saved) : [];
+  }, [isViewModalOpen]);
+
+  const properties = useMemo(() => {
+    const saved = localStorage.getItem('sapien_properties');
+    return saved ? JSON.parse(saved) : [];
+  }, [isViewModalOpen]);
+
   const handleDelete = (id: string) => {
     if (confirm('Tem certeza que deseja excluir este registro permanentemente?')) {
       setData(prev => prev.filter(item => item.id !== id));
@@ -39,6 +51,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
       setEditingItem(null);
       const defaults: any = { id: Math.random().toString(36).substr(2, 9) };
       if (type === 'client') { defaults.status = 'Ativo'; defaults.income = 0; }
+      if (type === 'broker') { defaults.commissionRate = 0; }
       if (type === 'bank') { 
         defaults.avgRate = 0; 
         defaults.logo = ''; 
@@ -51,16 +64,6 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
         defaults.email = '';
       }
       if (type === 'property') { defaults.value = 0; defaults.photos = []; }
-      if (type === 'company') {
-        defaults.name = '';
-        defaults.cnpj = '';
-        defaults.phone = '';
-        defaults.email = '';
-        defaults.address = '';
-        defaults.neighborhood = '';
-        defaults.city = '';
-        defaults.state = '';
-      }
       setFormData(defaults);
     }
     setNewPhotoUrl('');
@@ -82,18 +85,6 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
     setIsModalOpen(false);
   };
 
-  const handleAddPhotoUrl = () => {
-    if (newPhotoUrl.trim()) {
-      if (type === 'bank') {
-        setFormData({ ...formData, logo: newPhotoUrl.trim() });
-      } else {
-        const currentPhotos = formData.photos || [];
-        setFormData({ ...formData, photos: [...currentPhotos, newPhotoUrl.trim()] });
-      }
-      setNewPhotoUrl('');
-    }
-  };
-
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -112,12 +103,6 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const removePhoto = (index: number) => {
-    const currentPhotos = [...(formData.photos || [])];
-    currentPhotos.splice(index, 1);
-    setFormData({ ...formData, photos: currentPhotos });
-  };
-
   const filteredData = data.filter(item => {
     const values = Object.values(item).join(' ').toLowerCase();
     return values.includes(searchTerm.toLowerCase());
@@ -126,13 +111,15 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
   const getTableHeaders = () => {
     switch(type) {
       case 'client': return ['Nome', 'Documento', 'Telefone', 'Email', 'Renda', 'Status'];
-      case 'broker': return ['Nome', 'CRECI', 'Telefone', 'Email'];
+      case 'broker': return ['Nome', 'CRECI', 'Comissão (%)', 'Telefone', 'Email'];
       case 'property': return ['Título', 'Tipo', 'Valor', 'Endereço'];
       case 'bank': return ['Logo', 'Banco', 'Agência', 'Telefone', 'Taxa Média'];
       case 'company': return ['Nome', 'CNPJ', 'Município', 'Telefone'];
       default: return [];
     }
   };
+
+  const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
   const renderRow = (item: any) => {
     switch(type) {
@@ -142,7 +129,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
           <td className="px-6 py-4 text-gray-500">{item.taxId}</td>
           <td className="px-6 py-4 text-gray-500">{item.phone}</td>
           <td className="px-6 py-4 text-gray-500">{item.email}</td>
-          <td className="px-6 py-4 text-gray-900 font-bold">R$ {Number(item.income).toLocaleString()}</td>
+          <td className="px-6 py-4 text-gray-900 font-bold">{formatCurrency(Number(item.income))}</td>
           <td className="px-6 py-4">
             <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${item.status === 'Ativo' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
               {item.status}
@@ -154,6 +141,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
         <>
           <td className="px-6 py-4 font-semibold hover:text-[#8B0000] cursor-pointer" onClick={() => handleOpenViewModal(item)}>{item.name}</td>
           <td className="px-6 py-4 text-gray-500">{item.creci}</td>
+          <td className="px-6 py-4 text-gray-900 font-bold">{item.commissionRate}%</td>
           <td className="px-6 py-4 text-gray-500">{item.phone}</td>
           <td className="px-6 py-4 text-gray-500">{item.email}</td>
         </>
@@ -173,40 +161,27 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
             </div>
           </td>
           <td className="px-6 py-4 text-gray-500">{item.type}</td>
-          <td className="px-6 py-4 font-bold text-[#8B0000]">R$ {Number(item.value).toLocaleString()}</td>
+          <td className="px-6 py-4 font-bold text-[#8B0000]">{formatCurrency(Number(item.value))}</td>
           <td className="px-6 py-4 text-gray-500 truncate max-w-xs">{item.address}</td>
         </>
       );
-      case 'bank': return (
-        <>
-          <td className="px-6 py-4">
-            <div className="w-10 h-10 bg-white rounded-lg border border-gray-100 p-1 flex items-center justify-center shadow-sm">
-              {item.logo ? (
-                <img src={item.logo} alt="" className="max-w-full max-h-full object-contain" />
-              ) : (
-                <Landmark size={18} className="text-gray-300" />
-              )}
-            </div>
-          </td>
-          <td className="px-6 py-4 font-semibold hover:text-[#8B0000] cursor-pointer" onClick={() => handleOpenViewModal(item)}>{item.name}</td>
-          <td className="px-6 py-4 text-gray-500">{item.agency}</td>
-          <td className="px-6 py-4 text-gray-500">{item.phone}</td>
-          <td className="px-6 py-4 text-gray-900 font-bold">{item.avgRate}%</td>
-        </>
-      );
-      case 'company': return (
-        <>
-          <td className="px-6 py-4 font-semibold hover:text-[#8B0000] cursor-pointer" onClick={() => handleOpenViewModal(item)}>{item.name}</td>
-          <td className="px-6 py-4 text-gray-500">{item.cnpj}</td>
-          <td className="px-6 py-4 text-gray-500">{item.city} / {item.state}</td>
-          <td className="px-6 py-4 text-gray-500">{item.phone}</td>
-        </>
-      );
+      default: return null;
     }
   };
 
   const renderFormFields = () => {
     switch(type) {
+      case 'broker': return (
+        <>
+          <InputField label="Nome do Corretor" value={formData.name} onChange={v => setFormData({...formData, name: v})} />
+          <div className="grid grid-cols-2 gap-4">
+            <InputField label="CRECI" value={formData.creci} onChange={v => setFormData({...formData, creci: v})} />
+            <InputField label="Comissão (%)" type="number" step="0.1" value={formData.commissionRate} onChange={v => setFormData({...formData, commissionRate: Number(v)})} />
+          </div>
+          <InputField label="Telefone" value={formData.phone} onChange={v => setFormData({...formData, phone: v})} />
+          <InputField label="Email Profissional" type="email" value={formData.email} onChange={v => setFormData({...formData, email: v})} />
+        </>
+      );
       case 'client': return (
         <>
           <InputField label="Nome Completo" value={formData.name} onChange={v => setFormData({...formData, name: v})} />
@@ -215,146 +190,86 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
             <InputField label="Telefone" value={formData.phone} onChange={v => setFormData({...formData, phone: v})} />
             <InputField label="Email" type="email" value={formData.email} onChange={v => setFormData({...formData, email: v})} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <InputField label="Renda (Mensal)" type="number" value={formData.income} onChange={v => setFormData({...formData, income: v})} />
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-500 uppercase">Status</label>
-              <select className="w-full border border-gray-700 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-[#1F1F1F] text-white" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
-                <option value="Ativo">Ativo</option>
-                <option value="Inativo">Inativo</option>
-              </select>
-            </div>
-          </div>
+          <InputField label="Renda (Mensal)" type="number" value={formData.income} onChange={v => setFormData({...formData, income: Number(v)})} />
         </>
       );
-      case 'broker': return (
-        <>
-          <InputField label="Nome do Corretor" value={formData.name} onChange={v => setFormData({...formData, name: v})} />
-          <InputField label="CRECI" value={formData.creci} onChange={v => setFormData({...formData, creci: v})} />
-          <InputField label="Telefone" value={formData.phone} onChange={v => setFormData({...formData, phone: v})} />
-          <InputField label="Email Profissional" type="email" value={formData.email} onChange={v => setFormData({...formData, email: v})} />
-        </>
-      );
-      case 'property': return (
-        <>
-          <InputField label="Título do Imóvel" value={formData.title} onChange={v => setFormData({...formData, title: v})} />
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-500 uppercase">Tipo</label>
-              <select className="w-full border border-gray-700 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-[#1F1F1F] text-white" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
-                <option value="Casa">Casa</option>
-                <option value="Apartamento">Apartamento</option>
-                <option value="Terreno">Terreno</option>
-              </select>
-            </div>
-            <InputField label="Valor (R$)" type="number" value={formData.value} onChange={v => setFormData({...formData, value: v})} />
-          </div>
-          <InputField label="Endereço Completo" value={formData.address} onChange={v => setFormData({...formData, address: v})} />
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-500 uppercase">Construtora</label>
-            <select className="w-full border border-gray-700 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-[#1F1F1F] text-white" value={formData.constructionCompanyId} onChange={e => setFormData({...formData, constructionCompanyId: e.target.value})}>
-              <option value="">Selecione...</option>
-              {companies?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          </div>
-          <div className="space-y-3 pt-4 border-t border-gray-800">
-            <label className="text-xs font-bold text-gray-500 uppercase flex items-center"><ImageIcon size={14} className="mr-2" />Gestão de Fotos</label>
-            <div className="flex flex-col space-y-3">
-              <div className="flex space-x-2">
-                <div className="relative flex-1">
-                  <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-                  <input type="text" placeholder="Colar URL..." className="w-full pl-9 pr-4 py-2 border border-gray-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#8B0000] bg-[#1F1F1F] text-white" value={newPhotoUrl} onChange={e => setNewPhotoUrl(e.target.value)} />
-                </div>
-                <button type="button" onClick={handleAddPhotoUrl} className="px-4 py-2 bg-gray-800 text-gray-200 rounded-lg text-sm font-bold hover:bg-gray-700 transition-colors">Add</button>
-                <button type="button" onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-[#8B0000]/10 text-[#8B0000] rounded-lg text-sm font-bold hover:bg-[#8B0000]/20 transition-colors flex items-center space-x-2"><Upload size={14} /><span>Upload</span></button>
-                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
-              </div>
-              {formData.photos && formData.photos.length > 0 && (
-                <div className="grid grid-cols-4 gap-2 mt-2">
-                  {formData.photos.map((url: string, idx: number) => (
-                    <div key={idx} className="relative group aspect-square rounded-lg overflow-hidden border border-gray-800">
-                      <img src={url} alt="" className="w-full h-full object-cover" />
-                      <button type="button" onClick={() => removePhoto(idx)} className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={10} /></button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </>
-      );
-      case 'bank': return (
-        <>
-          <div className="grid grid-cols-2 gap-4">
-            <InputField label="Nome do Banco" value={formData.name} onChange={v => setFormData({...formData, name: v})} />
-            <InputField label="Nº da Agência" value={formData.agency} onChange={v => setFormData({...formData, agency: v})} />
-          </div>
-          <InputField label="Endereço da Agência" value={formData.address} onChange={v => setFormData({...formData, address: v})} />
-          <div className="grid grid-cols-3 gap-4">
-            <InputField label="Bairro" value={formData.neighborhood} onChange={v => setFormData({...formData, neighborhood: v})} />
-            <InputField label="Município" value={formData.city} onChange={v => setFormData({...formData, city: v})} />
-            <InputField label="UF" value={formData.state} onChange={v => setFormData({...formData, state: v})} />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <InputField label="Telefone" value={formData.phone} onChange={v => setFormData({...formData, phone: v})} />
-            <InputField label="E-mail" type="email" value={formData.email} onChange={v => setFormData({...formData, email: v})} />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <InputField label="Taxa Média (%)" type="number" step="0.01" value={formData.avgRate} onChange={v => setFormData({...formData, avgRate: v})} />
-            <InputField label="Nome do Contato" value={formData.contact} onChange={v => setFormData({...formData, contact: v})} />
-          </div>
-          <div className="space-y-3 pt-4 border-t border-gray-800">
-            <label className="text-xs font-bold text-gray-500 uppercase flex items-center"><LinkIcon size={14} className="mr-2" />Logomarca</label>
-            <div className="flex space-x-2">
-              <input type="text" placeholder="URL da logo..." className="flex-1 px-4 py-2 border border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-[#1F1F1F] text-white" value={formData.logo || ''} onChange={e => setFormData({...formData, logo: e.target.value})} />
-              <button type="button" onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-gray-800 rounded-lg text-sm font-bold"><Upload size={14} /></button>
-              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
-            </div>
-          </div>
-        </>
-      );
-      case 'company': return (
-        <>
-          <InputField label="Razão Social" value={formData.name} onChange={v => setFormData({...formData, name: v})} />
-          <InputField label="CNPJ" value={formData.cnpj} onChange={v => setFormData({...formData, cnpj: v})} />
-          <div className="grid grid-cols-2 gap-4">
-            <InputField label="Telefone" value={formData.phone} onChange={v => setFormData({...formData, phone: v})} />
-            <InputField label="E-mail" type="email" value={formData.email} onChange={v => setFormData({...formData, email: v})} />
-          </div>
-          <InputField label="Endereço" value={formData.address} onChange={v => setFormData({...formData, address: v})} />
-          <div className="grid grid-cols-3 gap-4">
-            <InputField label="Bairro" value={formData.neighborhood} onChange={v => setFormData({...formData, neighborhood: v})} />
-            <InputField label="Município" value={formData.city} onChange={v => setFormData({...formData, city: v})} />
-            <InputField label="UF" value={formData.state} onChange={v => setFormData({...formData, state: v})} />
-          </div>
-        </>
-      );
+      default: return null;
     }
   };
 
   const renderViewDetails = () => {
     if (!viewingItem) return null;
 
-    if (type === 'bank') {
+    if (type === 'broker') {
+      const brokerLeads = leads.filter((l: any) => l.brokerId === viewingItem.id);
+      
+      const aReceberLeads = brokerLeads.filter((l: any) => 
+        l.currentPhase !== LeadPhase.ABERTURA_CREDITO && l.currentPhase !== LeadPhase.ASSINATURA_CONTRATO
+      );
+      
+      const recebidosLeads = brokerLeads.filter((l: any) => 
+        l.currentPhase === LeadPhase.ASSINATURA_CONTRATO
+      );
+
+      const calculateComission = (leadsList: any[]) => leadsList.reduce((acc, l) => {
+        const prop = properties.find((p: any) => p.id === l.propertyId);
+        return acc + ((prop?.value || 0) * (viewingItem.commissionRate / 100));
+      }, 0);
+
+      const valAReceber = calculateComission(aReceberLeads);
+      const valRecebidos = calculateComission(recebidosLeads);
+
       return (
         <div className="space-y-6">
           <div className="flex items-center space-x-4">
-            <div className="w-20 h-20 bg-white border border-gray-100 rounded-2xl p-2 flex items-center justify-center shadow-md shrink-0">
-              {viewingItem.logo ? <img src={viewingItem.logo} alt="" className="max-w-full max-h-full object-contain" /> : <Landmark size={40} className="text-gray-200" />}
+            <div className="w-16 h-16 bg-[#8B0000] rounded-full flex items-center justify-center text-white text-xl font-bold">
+              {viewingItem.name.substring(0,2).toUpperCase()}
             </div>
             <div>
-              <h4 className="text-2xl font-bold text-gray-900">{viewingItem.name}</h4>
-              <p className="text-sm text-gray-500">Agência: {viewingItem.agency}</p>
+              <h4 className="text-2xl font-black text-gray-900">{viewingItem.name}</h4>
+              <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">CRECI: {viewingItem.creci} • {viewingItem.commissionRate}% Comissionamento</p>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <DetailCard icon={<Phone size={18} />} label="Telefone" value={viewingItem.phone} />
-            <DetailCard icon={<Mail size={18} />} label="E-mail" value={viewingItem.email} />
-            <div className="col-span-2">
-               <DetailCard icon={<MapPin size={18} />} label="Endereço Completo" value={`${viewingItem.address}, ${viewingItem.neighborhood}, ${viewingItem.city}/${viewingItem.state}`} />
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-green-50 p-4 rounded-2xl border border-green-100">
+              <div className="flex items-center text-green-600 mb-2">
+                <CheckCircle size={16} className="mr-2" />
+                <span className="text-[10px] font-black uppercase tracking-widest">Recebidos (Finalizados)</span>
+              </div>
+              <p className="text-xl font-black text-green-900">{formatCurrency(valRecebidos)}</p>
+              <p className="text-[10px] text-green-700 font-bold">{recebidosLeads.length} contratos assinados</p>
             </div>
-            <DetailCard icon={<Tag size={18} />} label="Taxa Média" value={`${viewingItem.avgRate}%`} />
-            <DetailCard icon={<Briefcase size={18} />} label="Contato Responsável" value={viewingItem.contact} />
+
+            <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
+              <div className="flex items-center text-blue-600 mb-2">
+                <Clock size={16} className="mr-2" />
+                <span className="text-[10px] font-black uppercase tracking-widest">A Receber (Em Fluxo)</span>
+              </div>
+              <p className="text-xl font-black text-blue-900">{formatCurrency(valAReceber)}</p>
+              <p className="text-[10px] text-blue-700 font-bold">{aReceberLeads.length} leads em aprovação</p>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-100 pt-4">
+            <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Pipeline Ativo</h5>
+            <div className="space-y-2">
+              {brokerLeads.length > 0 ? brokerLeads.map((l: any) => {
+                const prop = properties.find((p: any) => p.id === l.propertyId);
+                return (
+                  <div key={l.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-gray-900">{prop?.title || 'Lead s/ imóvel'}</p>
+                      <p className="text-[10px] text-gray-500 uppercase font-medium">{l.currentPhase}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-black text-[#8B0000]">{formatCurrency((prop?.value || 0) * (viewingItem.commissionRate / 100))}</p>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase">Comissão</p>
+                    </div>
+                  </div>
+                );
+              }) : <p className="text-xs text-gray-400 italic">Nenhum lead vinculado a este corretor.</p>}
+            </div>
           </div>
         </div>
       );
@@ -411,7 +326,6 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
             </tbody>
           </table>
         </div>
-        {filteredData.length === 0 && <div className="py-20 text-center"><p className="text-gray-400">Nenhum registro encontrado.</p></div>}
       </div>
 
       {isModalOpen && (
@@ -442,8 +356,8 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
                 {renderViewDetails()}
              </div>
              <div className="bg-gray-50 px-6 py-4 flex justify-between items-center border-t border-gray-100">
-                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">Sapien Intelligence Real Estate OS</span>
-                <button onClick={() => { setIsViewModalOpen(false); handleOpenModal(viewingItem); }} className="text-sm font-bold text-[#8B0000] hover:underline flex items-center"><Edit2 size={14} className="mr-2" />Editar Informações</button>
+                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">Sapien Intelligence OS</span>
+                <button onClick={() => { setIsViewModalOpen(false); handleOpenModal(viewingItem); }} className="text-sm font-bold text-[#8B0000] hover:underline flex items-center"><Edit2 size={14} className="mr-2" />Editar</button>
              </div>
           </div>
         </div>

@@ -33,6 +33,7 @@ export interface Broker {
   creci: string;
   phone: string;
   email: string;
+  commissionRate: number; // Porcentagem de comissão
 }
 
 export interface Property {
