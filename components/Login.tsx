@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { LogIn } from 'lucide-react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { LogIn, UserPlus, ArrowRight } from 'lucide-react';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase';
 
 interface LoginProps {
@@ -18,21 +18,38 @@ const SapienLogoLarge = ({ className }: { className?: string }) => (
 );
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
-  const [email, setEmail] = useState('admin@sapiencrm.com');
+  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+
+    if (mode === 'signup' && password !== confirmPassword) {
+      setError('As senhas não coincidem.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      if (mode === 'login') {
+        await signInWithEmailAndPassword(auth, email, password);
+      } else {
+        await createUserWithEmailAndPassword(auth, email, password);
+      }
       onLogin();
     } catch (err: any) {
-      setError('Falha na autenticação. Verifique e-mail e senha.');
       console.error(err);
+      if (err.code === 'auth/user-not-found') setError('Usuário não cadastrado.');
+      else if (err.code === 'auth/wrong-password') setError('Senha incorreta.');
+      else if (err.code === 'auth/email-already-in-use') setError('Este e-mail já está em uso.');
+      else if (err.code === 'auth/weak-password') setError('A senha deve ter pelo menos 6 caracteres.');
+      else setError('Erro na autenticação. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -50,41 +67,94 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <p className="text-gray-300 text-sm font-medium uppercase tracking-[0.2em]">Inteligência Imobiliária</p>
           </div>
 
-          <form className="space-y-6" onSubmit={handleLogin}>
-            {error && <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-xs text-center font-bold">{error}</div>}
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-gray-300">Usuário</label>
+          {/* Tabs */}
+          <div className="flex bg-black/20 p-1 rounded-xl mb-8">
+            <button 
+              onClick={() => { setMode('login'); setError(''); }}
+              className={`flex-1 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all ${mode === 'login' ? 'bg-white text-[#8B0000] shadow' : 'text-gray-400 hover:text-white'}`}
+            >
+              Login
+            </button>
+            <button 
+              onClick={() => { setMode('signup'); setError(''); }}
+              className={`flex-1 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all ${mode === 'signup' ? 'bg-white text-[#8B0000] shadow' : 'text-gray-400 hover:text-white'}`}
+            >
+              Cadastro
+            </button>
+          </div>
+
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            {error && (
+              <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-[10px] text-center font-black uppercase tracking-wider text-red-200">
+                {error}
+              </div>
+            )}
+            
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-300 ml-1">E-mail Corporativo</label>
               <input 
-                type="text" 
+                type="email" 
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-[#8B0000] text-white font-medium"
-                placeholder="Insira seu e-mail"
+                className="w-full bg-white border border-gray-300 rounded-xl px-5 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#8B0000] text-gray-900 font-bold placeholder:text-gray-400"
+                placeholder="exemplo@sapiencrm.com"
                 required
               />
             </div>
             
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-gray-300">Senha</label>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-300 ml-1">Senha de Acesso</label>
               <input 
                 type="password" 
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-[#8B0000] text-white font-medium"
-                placeholder="Insira sua senha"
+                className="w-full bg-white border border-gray-300 rounded-xl px-5 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#8B0000] text-gray-900 font-bold placeholder:text-gray-400"
+                placeholder="••••••••"
                 required
               />
             </div>
 
+            {mode === 'signup' && (
+              <div className="space-y-1.5 animate-in slide-in-from-top-2 duration-300">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-300 ml-1">Confirmar Senha</label>
+                <input 
+                  type="password" 
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  className="w-full bg-white border border-gray-300 rounded-xl px-5 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#8B0000] text-gray-900 font-bold placeholder:text-gray-400"
+                  placeholder="Repita sua senha"
+                  required
+                />
+              </div>
+            )}
+
             <button 
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-[#D40000] to-red-600 text-white font-bold py-4 rounded-xl shadow-xl hover:shadow-red-900/40 transition-all flex items-center justify-center space-x-3 disabled:opacity-50"
+              className="w-full bg-gradient-to-r from-[#D40000] to-red-600 text-white font-black py-4 rounded-xl shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center space-x-3 disabled:opacity-50 mt-4 text-xs uppercase tracking-[0.2em]"
             >
-              <LogIn size={20} />
-              <span>{loading ? 'AUTENTICANDO...' : 'ENTRAR NO SISTEMA'}</span>
+              {mode === 'login' ? <LogIn size={18} /> : <UserPlus size={18} />}
+              <span>{loading ? 'PROCESSANDO...' : (mode === 'login' ? 'ENTRAR NO SISTEMA' : 'CRIAR MINHA CONTA')}</span>
             </button>
           </form>
+
+          <div className="mt-8 text-center">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+              {mode === 'login' ? 'Ainda não tem acesso?' : 'Já possui uma conta?'}
+              <button 
+                onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
+                className="ml-2 text-white hover:text-red-400 underline underline-offset-4 transition-colors"
+              >
+                {mode === 'login' ? 'Cadastre-se aqui' : 'Faça login'}
+              </button>
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 flex items-center justify-center space-x-4 opacity-50">
+          <span className="h-px w-8 bg-white/20" />
+          <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.3em]">Sapien Real Estate Technology</p>
+          <span className="h-px w-8 bg-white/20" />
         </div>
       </div>
     </div>
