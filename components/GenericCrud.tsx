@@ -2,9 +2,9 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Plus, Edit2, Trash2, Search, X, Image as ImageIcon, 
-  Eye, Landmark, Upload, Link as LinkIcon
+  Eye, Landmark, Upload, Link as LinkIcon, Building2
 } from 'lucide-react';
-import { LeadPhase } from '../types';
+import { LeadPhase, ConstructionCompany } from '../types';
 
 interface GenericCrudProps {
   title: string;
@@ -12,6 +12,7 @@ interface GenericCrudProps {
   type: 'client' | 'broker' | 'property' | 'bank' | 'company';
   onSave?: (data: any) => Promise<any>;
   onDelete?: (id: string) => Promise<any>;
+  companies?: ConstructionCompany[]; // Optional extra data for linking
 }
 
 const PROPERTY_TYPES = [
@@ -23,7 +24,7 @@ const PROPERTY_TYPES = [
   "Sala Comercial", "Sítio", "Sobrado", "Studio"
 ];
 
-const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, onDelete }) => {
+const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, onDelete, companies = [] }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -50,7 +51,15 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
       if (type === 'client') { defaults.status = 'Ativo'; defaults.income = 0; }
       if (type === 'broker') { defaults.commissionRate = 0; }
       if (type === 'bank') { defaults.avgRate = 0; }
-      if (type === 'property') { defaults.value = 0; defaults.photos = []; defaults.type = "Apartamento"; }
+      if (type === 'property') { 
+        defaults.value = 0; 
+        defaults.photos = []; 
+        defaults.type = "Apartamento"; 
+        defaults.state = "";
+        defaults.city = "";
+        defaults.neighborhood = "";
+        defaults.constructionCompanyId = "";
+      }
       setFormData(defaults);
     }
     setImgUrlInput('');
@@ -65,9 +74,19 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    let finalData = { ...formData };
+    
+    // Automatic Title Rule for Properties: "Type Neighborhood City State"
+    if (type === 'property') {
+      const { type: pType, neighborhood, city, state } = finalData;
+      const autoTitle = `${pType || ''} ${neighborhood || ''} ${city || ''} ${state || ''}`.trim().replace(/\s+/g, ' ');
+      finalData.title = autoTitle;
+    }
+
     try {
       if (onSave) {
-        await onSave(formData);
+        await onSave(finalData);
         setIsModalOpen(false);
       }
     } catch (err) {
@@ -112,7 +131,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
     switch(type) {
       case 'client': return ['Nome', 'Documento', 'Telefone', 'Email', 'Renda', 'Status'];
       case 'broker': return ['Nome', 'CRECI', 'Comissão (%)', 'Telefone', 'Email'];
-      case 'property': return ['Título', 'Tipo', 'Valor', 'Localização'];
+      case 'property': return ['Descrição', 'Tipo', 'Valor de Venda', 'Localização'];
       case 'bank': return ['Logo', 'Banco', 'Agência', 'Telefone', 'Taxa Média'];
       case 'company': return ['Nome', 'CNPJ', 'Município', 'Telefone'];
       default: return [];
@@ -153,7 +172,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
               <div className="w-10 h-10 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 shrink-0">
                 {item.photos?.[0] ? <img src={item.photos[0]} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform" /> : <div className="w-full h-full flex items-center justify-center text-gray-300"><ImageIcon size={16} /></div>}
               </div>
-              <span className="group-hover:text-[#8B0000] transition-colors">{item.title}</span>
+              <span className="group-hover:text-[#8B0000] transition-colors truncate max-w-[200px]">{item.title}</span>
             </div>
           </td>
           <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{item.type}</td>
@@ -229,7 +248,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
         <div className="space-y-6">
           <div className="space-y-4">
             <h4 className="text-[10px] font-black text-[#8B0000] uppercase tracking-[0.3em]">Informações Gerais</h4>
-            <InputField label="Título do Imóvel" value={formData.title} onChange={v => setFormData({...formData, title: v})} />
+            
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tipo de Imóvel</label>
@@ -243,6 +262,25 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
               </div>
               <InputField label="Valor Venda (R$)" type="number" value={formData.value} onChange={v => setFormData({...formData, value: Number(v)})} />
             </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Vincular Construtora</label>
+              <select 
+                className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900 font-bold" 
+                value={formData.constructionCompanyId} 
+                onChange={e => setFormData({...formData, constructionCompanyId: e.target.value})}
+              >
+                <option value="">Selecione a construtora...</option>
+                {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            
+            <div className="p-3 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1 italic">Descrição Gerada Automaticamente:</p>
+               <p className="text-xs font-black text-[#8B0000]">
+                  {`${formData.type || ''} ${formData.neighborhood || ''} ${formData.city || ''} ${formData.state || ''}`.trim() || 'Preencha os campos de localização'}
+               </p>
+            </div>
           </div>
 
           <div className="space-y-4">
@@ -250,7 +288,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
             <InputField label="Endereço Completo" value={formData.address} onChange={v => setFormData({...formData, address: v})} />
             <div className="grid grid-cols-3 gap-3">
               <InputField label="Bairro" value={formData.neighborhood} onChange={v => setFormData({...formData, neighborhood: v})} />
-              <InputField label="Município" value={formData.city} onChange={v => setFormData({...formData, city: v})} />
+              <InputField label="Cidade / Município" value={formData.city} onChange={v => setFormData({...formData, city: v})} />
               <InputField label="UF" value={formData.state} onChange={v => setFormData({...formData, state: v})} />
             </div>
           </div>
@@ -386,52 +424,69 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
       )}
 
       {isViewModalOpen && viewingItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl my-8 overflow-hidden animate-in fade-in zoom-in duration-300">
-             <div className="p-8">
-                <div className="flex justify-between items-center mb-6">
-                   <h4 className="text-[10px] font-black text-[#8B0000] uppercase tracking-[0.3em]">Detalhes do Registro Cloud</h4>
-                   <button onClick={() => setIsViewModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X size={24} className="text-gray-400" /></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+          <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl my-8 overflow-hidden animate-in fade-in zoom-in duration-300 relative">
+             <div className="p-10 pt-8">
+                <div className="flex justify-between items-center mb-10">
+                   <h4 className="text-[11px] font-black text-[#8B0000] uppercase tracking-[0.4em]">Detalhes do Registro Cloud</h4>
+                   <button onClick={() => setIsViewModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X size={28} className="text-gray-300" /></button>
                 </div>
                 
-                {type === 'property' && viewingItem.photos && viewingItem.photos.length > 0 && (
-                  <div className="mb-8 h-64 rounded-2xl overflow-hidden shadow-lg">
-                    <img src={viewingItem.photos[0]} alt="" className="w-full h-full object-cover" />
-                  </div>
-                )}
+                {type === 'property' ? (
+                  <div className="space-y-10">
+                    {/* Big Image Section */}
+                    <div className="w-full aspect-[16/9] rounded-3xl overflow-hidden shadow-2xl bg-gray-100">
+                      {viewingItem.photos?.[0] ? (
+                        <img src={viewingItem.photos[0]} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-300">
+                          <ImageIcon size={64} strokeWidth={1} />
+                        </div>
+                      )}
+                    </div>
 
-                <div className="grid grid-cols-2 gap-x-8 gap-y-4 max-h-[60vh] overflow-y-auto pr-4">
-                  {Object.entries(viewingItem).map(([key, value]) => (
-                    key !== 'id' && key !== 'photos' && key !== 'logo' && key !== 'createdAt' && key !== 'updatedAt' && value !== undefined && value !== '' && (
-                      <div key={key} className="border-b border-gray-50 pb-2">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{key}</label>
-                        <p className="text-gray-900 font-bold text-sm">
-                          {key === 'value' ? formatCurrency(Number(value)) : String(value)}
-                        </p>
-                      </div>
-                    )
-                  ))}
-                </div>
+                    {/* Information Grid Section - Redesigned to match image */}
+                    <div className="grid grid-cols-2 gap-x-12 gap-y-10">
+                       <DetailBlock label="UF" value={viewingItem.state} />
+                       <DetailBlock label="TIPO" value={viewingItem.type} />
+                       
+                       <DetailBlock label="VALOR DE VENDA" value={formatCurrency(Number(viewingItem.value))} />
+                       <DetailBlock label="BAIRRO" value={viewingItem.neighborhood} />
+                       
+                       <DetailBlock label="CIDADE" value={viewingItem.city} />
+                       <DetailBlock label="DESCRIÇÃO" value={viewingItem.title} />
 
-                {type === 'property' && viewingItem.photos && viewingItem.photos.length > 1 && (
-                  <div className="mt-8">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-4">Galeria de Fotos</label>
-                    <div className="grid grid-cols-4 gap-2">
-                       {viewingItem.photos.slice(1).map((p: string, i: number) => (
-                         <div key={i} className="aspect-square rounded-lg overflow-hidden border border-gray-100">
-                           <img src={p} alt="" className="w-full h-full object-cover" />
-                         </div>
-                       ))}
+                       <DetailBlock label="ENDEREÇO" value={viewingItem.address} className="col-span-2" />
+                       
+                       {viewingItem.constructionCompanyId && (
+                         <DetailBlock 
+                           label="CONSTRUTORA" 
+                           value={companies.find(c => c.id === viewingItem.constructionCompanyId)?.name || 'Vínculo removido'} 
+                           className="col-span-2"
+                           icon={<Building2 size={14} className="mr-2 text-[#8B0000]" />}
+                         />
+                       )}
                     </div>
                   </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-4 max-h-[60vh] overflow-y-auto pr-4">
+                    {Object.entries(viewingItem).map(([key, value]) => (
+                      key !== 'id' && key !== 'photos' && key !== 'logo' && key !== 'createdAt' && key !== 'updatedAt' && value !== undefined && value !== '' && (
+                        <div key={key} className="border-b border-gray-50 pb-2">
+                          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{key}</label>
+                          <p className="text-gray-900 font-bold text-sm">{String(value)}</p>
+                        </div>
+                      )
+                    ))}
+                  </div>
                 )}
 
-                <div className="mt-8 flex justify-end space-x-4">
+                <div className="mt-12 flex justify-end">
                    <button 
                     onClick={() => { setIsViewModalOpen(false); handleOpenModal(viewingItem); }} 
-                    className="text-xs font-black uppercase tracking-widest text-[#8B0000] flex items-center hover:underline"
+                    className="text-[11px] font-black uppercase tracking-[0.2em] text-[#8B0000] flex items-center hover:bg-red-50 px-4 py-2 rounded-lg transition-all"
                    >
-                      <Edit2 size={14} className="mr-2" /> Editar Registro
+                      <Edit2 size={14} className="mr-2" /> Editar Informações
                    </button>
                 </div>
              </div>
@@ -441,6 +496,16 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
     </div>
   );
 };
+
+const DetailBlock: React.FC<{ label: string; value: string; className?: string; icon?: React.ReactNode }> = ({ label, value, className = "", icon }) => (
+  <div className={`space-y-1.5 ${className}`}>
+    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">{label}</label>
+    <div className="flex items-center">
+      {icon}
+      <p className="text-gray-900 font-bold text-base tracking-tight leading-tight">{value || '---'}</p>
+    </div>
+  </div>
+);
 
 const InputField: React.FC<{ label: string; value: any; onChange: (v: string) => void; type?: string; step?: string }> = ({ label, value, onChange, type = "text", step }) => (
   <div className="space-y-1">

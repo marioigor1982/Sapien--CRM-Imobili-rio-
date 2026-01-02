@@ -26,11 +26,10 @@ export const INITIAL_COMPANIES: ConstructionCompany[] = [
   },
 ];
 
-// Added missing neighborhood, city, and state properties to satisfy the Property interface
 export const INITIAL_PROPERTIES: Property[] = [
   { 
     id: 'p1', 
-    title: 'Residencial Horizonte', 
+    title: 'Apartamento Jardim Paulista São Paulo SP', 
     type: 'Apartamento', 
     value: 450000, 
     address: 'Rua das Flores, 123', 
