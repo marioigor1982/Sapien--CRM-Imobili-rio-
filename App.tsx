@@ -116,7 +116,7 @@ const App: React.FC = () => {
 
   const renderView = () => {
     switch (currentView) {
-      case 'Dashboard': return <Dashboard leads={leads} clients={clients} properties={properties} />;
+      case 'Dashboard': return <Dashboard leads={leads} clients={clients} properties={properties} brokers={brokers} />;
       case 'Kanban': return <KanbanBoard leads={leads} clients={clients} brokers={brokers} properties={properties} updatePhase={handleUpdateLeadPhase} onAddLead={() => openLeadModal()} onEditLead={openLeadModal} onViewLead={openLeadView} onDeleteLead={handleDeleteLead} />;
       case 'List': return <LeadTable leads={leads} clients={clients} brokers={brokers} properties={properties} banks={banks} companies={companies} updatePhase={handleUpdateLeadPhase} onAddLead={() => openLeadModal()} onEditLead={openLeadModal} onDeleteLead={handleDeleteLead} onViewLead={openLeadView} />;
       case 'Clientes': return <GenericCrud title="Clientes" data={clients} type="client" onSave={(d) => d.id ? clientService.update(d.id, d) : clientService.create(d)} onDelete={clientService.remove} />;
