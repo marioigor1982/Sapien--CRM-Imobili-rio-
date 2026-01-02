@@ -59,7 +59,6 @@ export interface Bank {
   state: string;
   phone: string;
   email: string;
-  avgRate: number;
   contact: string;
   logo?: string;
 }

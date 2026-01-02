@@ -52,7 +52,6 @@ export const INITIAL_BANKS: Bank[] = [
     state: 'SP',
     phone: '(11) 4004-0104',
     email: 'agencia1234@caixa.gov.br',
-    avgRate: 9.5, 
     contact: 'Gerente João',
     logo: 'https://images.seeklogo.com/logo-png/2/1/caixa-economica-federal-logo-png_seeklogo-24768.png'
   },
@@ -66,7 +65,6 @@ export const INITIAL_BANKS: Bank[] = [
     state: 'SP',
     phone: '(11) 4004-4828',
     email: 'atendimento@itau.com.br',
-    avgRate: 10.2, 
     contact: 'Gerente Maria',
     logo: 'https://images.seeklogo.com/logo-png/51/1/itau-logo-png_seeklogo-512719.png'
   },

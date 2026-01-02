@@ -50,7 +50,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
       const defaults: any = {};
       if (type === 'client') { defaults.status = 'Ativo'; defaults.income = 0; }
       if (type === 'broker') { defaults.commissionRate = 0; }
-      if (type === 'bank') { defaults.avgRate = 0; }
+      if (type === 'bank') { defaults.logo = ''; }
       if (type === 'property') { 
         defaults.value = 0; 
         defaults.photos = []; 
@@ -132,7 +132,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
       case 'client': return ['Nome', 'Documento', 'Telefone', 'Email', 'Renda', 'Status'];
       case 'broker': return ['Nome', 'CRECI', 'Comissão (%)', 'Telefone', 'Email'];
       case 'property': return ['Descrição', 'Tipo', 'Valor de Venda', 'Localização'];
-      case 'bank': return ['Logo', 'Banco', 'Agência', 'Telefone', 'Taxa Média'];
+      case 'bank': return ['Logo', 'Banco', 'Agência', 'Telefone', 'Email'];
       case 'company': return ['Nome', 'CNPJ', 'Município', 'Telefone'];
       default: return [];
     }
@@ -190,7 +190,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
           <td className="px-6 py-4 font-bold text-gray-900 whitespace-nowrap hover:text-[#8B0000] cursor-pointer" onClick={() => handleOpenViewModal(item)}>{item.name}</td>
           <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{item.agency}</td>
           <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{item.phone}</td>
-          <td className="px-6 py-4 text-gray-900 font-bold whitespace-nowrap">{item.avgRate}%</td>
+          <td className="px-6 py-4 text-gray-900 font-bold whitespace-nowrap">{item.email}</td>
         </>
       );
       case 'company': return (
@@ -349,7 +349,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
           <InputField label="Nome do Banco" value={formData.name} onChange={v => setFormData({...formData, name: v})} />
           <div className="grid grid-cols-2 gap-4">
             <InputField label="Agência" value={formData.agency} onChange={v => setFormData({...formData, agency: v})} />
-            <InputField label="Taxa Média (%)" type="number" step="0.01" value={formData.avgRate} onChange={v => setFormData({...formData, avgRate: Number(v)})} />
+            <InputField label="URL da Logo" value={formData.logo} onChange={v => setFormData({...formData, logo: v})} />
           </div>
           <InputField label="Telefone Contato" value={formData.phone} onChange={v => setFormData({...formData, phone: v})} />
           <InputField label="E-mail" value={formData.email} onChange={v => setFormData({...formData, email: v})} />

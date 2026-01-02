@@ -43,7 +43,7 @@ export const initDatabase = async () => {
       agency: "0001",
       phone: "(11) 4004-0001",
       email: "atendimento@caixa.gov.br",
-      avgRate: 9.5
+      logo: "https://images.seeklogo.com/logo-png/2/1/caixa-economica-federal-logo-png_seeklogo-24768.png"
     });
 
     // Inicializa Construtoras
