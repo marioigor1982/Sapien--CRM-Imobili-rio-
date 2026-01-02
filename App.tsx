@@ -18,7 +18,7 @@ import {
   clientService, brokerService, propertyService, 
   bankService, companyService, leadService 
 } from './dataService';
-import { X, User, Home, Landmark, Briefcase, Calendar, Clock, Edit2, Trash2 } from 'lucide-react';
+import { X, User, Home, Landmark, Briefcase, Calendar, Clock, Edit2, Trash2, Image as ImageIcon } from 'lucide-react';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -47,7 +47,6 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    // Conexões Firestore Real-time
     const unsubClients = clientService.subscribe(setClients);
     const unsubBrokers = brokerService.subscribe(setBrokers);
     const unsubProps = propertyService.subscribe(setProperties);
@@ -121,7 +120,7 @@ const App: React.FC = () => {
       case 'Kanban': return <KanbanBoard leads={leads} clients={clients} brokers={brokers} properties={properties} updatePhase={handleUpdateLeadPhase} onAddLead={() => openLeadModal()} onEditLead={openLeadModal} onViewLead={openLeadView} onDeleteLead={handleDeleteLead} />;
       case 'List': return <LeadTable leads={leads} clients={clients} brokers={brokers} properties={properties} banks={banks} companies={companies} updatePhase={handleUpdateLeadPhase} onAddLead={() => openLeadModal()} onEditLead={openLeadModal} onDeleteLead={handleDeleteLead} onViewLead={openLeadView} />;
       case 'Clientes': return <GenericCrud title="Clientes" data={clients} type="client" onSave={(d) => d.id ? clientService.update(d.id, d) : clientService.create(d)} onDelete={clientService.remove} />;
-      case 'Corretores': return <GenericCrud title="Corretores" data={brokers} type="broker" onSave={(d) => d.id ? brokerService.update(d.id, d) : brokerService.create(d)} onDelete={brokerService.remove} />;
+      case 'Corretores': return <GenericCrud title="Corretores" data={brokers} type="broker" onSave={(d) => d.id ? brokerService.update(d.id, d) : brokerService.create(d)} onDelete={brokerService.remove} leads={leads} properties={properties} />;
       case 'Properties': return <GenericCrud title="Imóveis" data={properties} type="property" onSave={(d) => d.id ? propertyService.update(d.id, d) : propertyService.create(d)} onDelete={propertyService.remove} companies={companies} />;
       case 'Bancos': return <GenericCrud title="Bancos" data={banks} type="bank" onSave={(d) => d.id ? bankService.update(d.id, d) : bankService.create(d)} onDelete={bankService.remove} />;
       case 'Construtoras': return <GenericCrud title="Construtoras" data={companies} type="company" onSave={(d) => d.id ? companyService.update(d.id, d) : companyService.create(d)} onDelete={companyService.remove} />;
@@ -167,7 +166,6 @@ const App: React.FC = () => {
   );
 };
 
-// Internal Modals for App (Lead Management)
 const LeadModal: React.FC<any> = ({ lead, onClose, onSave, clients, brokers, properties, banks }) => {
   const [data, setData] = useState({
     clientId: lead?.clientId || '',
@@ -242,26 +240,40 @@ const LeadDetailsModal: React.FC<any> = ({ lead, onClose, onEdit, onDelete, clie
             </div>
             <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 transition-colors"><X size={24} /></button>
           </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-6">
+              {/* Property Image Section */}
+              <div className="w-full aspect-video rounded-2xl overflow-hidden bg-gray-100 shadow-lg border border-gray-100">
+                {property?.photos?.[0] ? (
+                  <img src={property.photos[0]} alt={property.title} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-300">
+                    <ImageIcon size={48} strokeWidth={1} />
+                  </div>
+                )}
+              </div>
+
               <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
                 <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Imóvel</h4>
-                <p className="font-bold text-gray-900 text-lg">{property?.title || 'Não vinculado'}</p>
+                <p className="font-bold text-gray-900 text-lg line-clamp-2">{property?.title || 'Não vinculado'}</p>
                 <p className="text-2xl font-black text-[#8B0000] mt-2">
                   {property ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(property.value) : 'R$ 0,00'}
                 </p>
               </div>
+
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-gray-50 rounded-xl">
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
                   <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Corretor</h4>
-                  <p className="text-sm font-bold text-gray-900">{broker?.name || 'Não atribuído'}</p>
+                  <p className="text-sm font-bold text-gray-900 truncate">{broker?.name || 'Não atribuído'}</p>
                 </div>
-                <div className="p-4 bg-gray-50 rounded-xl">
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
                   <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Banco</h4>
-                  <p className="text-sm font-bold text-gray-900">{bank?.name || 'Não definido'}</p>
+                  <p className="text-sm font-bold text-gray-900 truncate">{bank?.name || 'Não definido'}</p>
                 </div>
               </div>
             </div>
+
             <div className="space-y-4">
               <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Histórico do Pipeline</h4>
               <div className="relative pl-6 space-y-6 border-l-2 border-gray-100 ml-2">
@@ -275,9 +287,10 @@ const LeadDetailsModal: React.FC<any> = ({ lead, onClose, onEdit, onDelete, clie
               </div>
             </div>
           </div>
+
           <div className="mt-10 pt-6 border-t border-gray-100 flex justify-end space-x-3">
-            <button onClick={onDelete} className="px-6 py-2 border border-red-200 text-red-600 rounded-lg font-bold text-xs uppercase tracking-widest hover:bg-red-50">Excluir</button>
-            <button onClick={onEdit} className="px-6 py-2 bg-[#8B0000] text-white rounded-lg font-bold text-xs uppercase tracking-widest shadow-md hover:bg-[#6b0000]">Editar Dados</button>
+            <button onClick={onDelete} className="px-6 py-2 border border-red-200 text-red-600 rounded-lg font-bold text-xs uppercase tracking-widest hover:bg-red-50 transition-colors">Excluir</button>
+            <button onClick={onEdit} className="px-6 py-2 bg-[#8B0000] text-white rounded-lg font-bold text-xs uppercase tracking-widest shadow-md hover:bg-[#6b0000] transition-colors">Editar Dados</button>
           </div>
         </div>
       </div>

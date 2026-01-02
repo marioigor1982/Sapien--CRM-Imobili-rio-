@@ -2,9 +2,10 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Plus, Edit2, Trash2, Search, X, Image as ImageIcon, 
-  Eye, Landmark, Upload, Link as LinkIcon, Building2
+  Eye, Landmark, Upload, Link as LinkIcon, Building2,
+  Wallet, TrendingUp
 } from 'lucide-react';
-import { LeadPhase, ConstructionCompany } from '../types';
+import { LeadPhase, ConstructionCompany, Lead, Property } from '../types';
 
 interface GenericCrudProps {
   title: string;
@@ -12,7 +13,9 @@ interface GenericCrudProps {
   type: 'client' | 'broker' | 'property' | 'bank' | 'company';
   onSave?: (data: any) => Promise<any>;
   onDelete?: (id: string) => Promise<any>;
-  companies?: ConstructionCompany[]; // Optional extra data for linking
+  companies?: ConstructionCompany[];
+  leads?: Lead[]; // Added to calculate broker commissions
+  properties?: Property[]; // Added to calculate broker commissions
 }
 
 const PROPERTY_TYPES = [
@@ -24,7 +27,9 @@ const PROPERTY_TYPES = [
   "Sala Comercial", "Sítio", "Sobrado", "Studio"
 ];
 
-const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, onDelete, companies = [] }) => {
+const GenericCrud: React.FC<GenericCrudProps> = ({ 
+  title, data, type, onSave, onDelete, companies = [], leads = [], properties = [] 
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -77,7 +82,6 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
 
     let finalData = { ...formData };
     
-    // Automatic Title Rule for Properties: "Type Neighborhood City State"
     if (type === 'property') {
       const { type: pType, neighborhood, city, state } = finalData;
       const autoTitle = `${pType || ''} ${neighborhood || ''} ${city || ''} ${state || ''}`.trim().replace(/\s+/g, ' ');
@@ -122,6 +126,37 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
     setFormData({ ...formData, photos: currentPhotos });
   };
 
+  const calculateBrokerCommissions = (brokerId: string) => {
+    const brokerLeads = leads.filter(l => l.brokerId === brokerId);
+    const broker = data.find(b => b.id === brokerId);
+    const commissionRate = broker?.commissionRate || 0;
+
+    let aReceber = 0;
+    let recebido = 0;
+
+    const aReceberPhases = [
+      LeadPhase.APROVACAO_CREDITO,
+      LeadPhase.VISITA_IMOVEL,
+      LeadPhase.ENGENHARIA,
+      LeadPhase.EMISSAO_CONTRATO
+    ];
+
+    brokerLeads.forEach(lead => {
+      const property = properties.find(p => p.id === lead.propertyId);
+      if (!property) return;
+
+      const commissionValue = (Number(property.value) * commissionRate) / 100;
+
+      if (lead.currentPhase === LeadPhase.ASSINATURA_CONTRATO) {
+        recebido += commissionValue;
+      } else if (aReceberPhases.includes(lead.currentPhase)) {
+        aReceber += commissionValue;
+      }
+    });
+
+    return { aReceber, recebido };
+  };
+
   const filteredData = data.filter(item => {
     const values = Object.values(item).filter(v => typeof v === 'string' || typeof v === 'number').join(' ').toLowerCase();
     return values.includes(searchTerm.toLowerCase());
@@ -130,7 +165,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
   const getTableHeaders = () => {
     switch(type) {
       case 'client': return ['Nome', 'Documento', 'Telefone', 'Email', 'Renda', 'Status'];
-      case 'broker': return ['Nome', 'CRECI', 'Comissão (%)', 'Telefone', 'Email'];
+      case 'broker': return ['Nome', 'CRECI', 'Comissão (%)', 'Telefone', 'A Receber', 'Recebido'];
       case 'property': return ['Descrição', 'Tipo', 'Valor de Venda', 'Localização'];
       case 'bank': return ['Logo', 'Banco', 'Agência', 'Telefone', 'Email'];
       case 'company': return ['Nome', 'CNPJ', 'Município', 'Telefone'];
@@ -156,15 +191,18 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
           </td>
         </>
       );
-      case 'broker': return (
-        <>
-          <td className="px-6 py-4 font-bold text-gray-900 whitespace-nowrap hover:text-[#8B0000] cursor-pointer" onClick={() => handleOpenViewModal(item)}>{item.name}</td>
-          <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{item.creci}</td>
-          <td className="px-6 py-4 text-gray-900 font-bold text-center whitespace-nowrap">{item.commissionRate}%</td>
-          <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{item.phone}</td>
-          <td className="px-6 py-4 text-gray-500">{item.email}</td>
-        </>
-      );
+      case 'broker': 
+        const { aReceber, recebido } = calculateBrokerCommissions(item.id);
+        return (
+          <>
+            <td className="px-6 py-4 font-bold text-gray-900 whitespace-nowrap hover:text-[#8B0000] cursor-pointer" onClick={() => handleOpenViewModal(item)}>{item.name}</td>
+            <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{item.creci}</td>
+            <td className="px-6 py-4 text-gray-900 font-bold text-center whitespace-nowrap">{item.commissionRate}%</td>
+            <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{item.phone}</td>
+            <td className="px-6 py-4 font-bold text-blue-600 whitespace-nowrap">{formatCurrency(aReceber)}</td>
+            <td className="px-6 py-4 font-bold text-green-600 whitespace-nowrap">{formatCurrency(recebido)}</td>
+          </>
+        );
       case 'property': return (
         <>
           <td className="px-6 py-4 font-bold whitespace-nowrap">
@@ -434,7 +472,6 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
                 
                 {type === 'property' ? (
                   <div className="space-y-10">
-                    {/* Big Image Section */}
                     <div className="w-full aspect-[16/9] rounded-3xl overflow-hidden shadow-2xl bg-gray-100">
                       {viewingItem.photos?.[0] ? (
                         <img src={viewingItem.photos[0]} alt="" className="w-full h-full object-cover" />
@@ -445,19 +482,14 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
                       )}
                     </div>
 
-                    {/* Information Grid Section - Redesigned to match image */}
                     <div className="grid grid-cols-2 gap-x-12 gap-y-10">
                        <DetailBlock label="UF" value={viewingItem.state} />
                        <DetailBlock label="TIPO" value={viewingItem.type} />
-                       
                        <DetailBlock label="VALOR DE VENDA" value={formatCurrency(Number(viewingItem.value))} />
                        <DetailBlock label="BAIRRO" value={viewingItem.neighborhood} />
-                       
                        <DetailBlock label="CIDADE" value={viewingItem.city} />
                        <DetailBlock label="DESCRIÇÃO" value={viewingItem.title} />
-
                        <DetailBlock label="ENDEREÇO" value={viewingItem.address} className="col-span-2" />
-                       
                        {viewingItem.constructionCompanyId && (
                          <DetailBlock 
                            label="CONSTRUTORA" 
@@ -466,6 +498,42 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
                            icon={<Building2 size={14} className="mr-2 text-[#8B0000]" />}
                          />
                        )}
+                    </div>
+                  </div>
+                ) : type === 'broker' ? (
+                  <div className="space-y-10">
+                    <div className="grid grid-cols-2 gap-8">
+                      <div className="col-span-2 flex items-center space-x-4 bg-gray-50 p-6 rounded-3xl">
+                        <div className="w-16 h-16 bg-[#8B0000] rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-lg">
+                          {viewingItem.name?.charAt(0)}
+                        </div>
+                        <div>
+                          <h2 className="text-2xl font-black text-gray-900 leading-tight">{viewingItem.name}</h2>
+                          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">CRECI: {viewingItem.creci}</p>
+                        </div>
+                      </div>
+
+                      <div className="p-6 border border-gray-100 rounded-3xl bg-blue-50/30">
+                        <div className="flex items-center space-x-2 mb-2 text-blue-600">
+                          <TrendingUp size={16} />
+                          <span className="text-[10px] font-black uppercase tracking-widest">A Receber</span>
+                        </div>
+                        <p className="text-2xl font-black text-blue-700">{formatCurrency(calculateBrokerCommissions(viewingItem.id).aReceber)}</p>
+                      </div>
+
+                      <div className="p-6 border border-gray-100 rounded-3xl bg-green-50/30">
+                        <div className="flex items-center space-x-2 mb-2 text-green-600">
+                          <Wallet size={16} />
+                          <span className="text-[10px] font-black uppercase tracking-widest">Recebido</span>
+                        </div>
+                        <p className="text-2xl font-black text-green-700">{formatCurrency(calculateBrokerCommissions(viewingItem.id).recebido)}</p>
+                      </div>
+
+                      <div className="col-span-2 grid grid-cols-2 gap-x-8 gap-y-4 pt-4">
+                        <DetailBlock label="Telefone" value={viewingItem.phone} />
+                        <DetailBlock label="E-mail Profissional" value={viewingItem.email} />
+                        <DetailBlock label="Taxa de Comissão" value={`${viewingItem.commissionRate}%`} />
+                      </div>
                     </div>
                   </div>
                 ) : (
