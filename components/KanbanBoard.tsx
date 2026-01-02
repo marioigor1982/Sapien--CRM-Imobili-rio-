@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Lead, LeadPhase, PHASES_ORDER, Client, Broker, Property } from '../types';
-import { MoreHorizontal, User, MapPin, Plus, GripVertical, Eye } from 'lucide-react';
+import { MoreHorizontal, User, MapPin, Plus, GripVertical, Eye, Trash2 } from 'lucide-react';
 
 interface KanbanBoardProps {
   leads: Lead[];
@@ -12,10 +12,11 @@ interface KanbanBoardProps {
   onAddLead?: () => void;
   onEditLead?: (lead: Lead) => void;
   onViewLead?: (lead: Lead) => void;
+  onDeleteLead?: (id: string) => void;
 }
 
 const KanbanBoard: React.FC<KanbanBoardProps> = ({ 
-  leads, clients, brokers, properties, updatePhase, onAddLead, onEditLead, onViewLead 
+  leads, clients, brokers, properties, updatePhase, onAddLead, onEditLead, onViewLead, onDeleteLead 
 }) => {
   const [draggedLeadId, setDraggedLeadId] = useState<string | null>(null);
   const [activeDropZone, setActiveDropZone] = useState<LeadPhase | null>(null);
@@ -137,9 +138,22 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                         <h4 className="font-bold text-gray-900 text-sm group-hover:text-[#8B0000] transition-colors line-clamp-1">
                           {client?.name || 'Cliente s/ nome'}
                         </h4>
-                        <button className="text-gray-300 hover:text-[#8B0000] transition-colors" onClick={(e) => { e.stopPropagation(); onViewLead?.(lead); }}>
-                          <Eye size={14} />
-                        </button>
+                        <div className="flex items-center space-x-1">
+                          <button 
+                            className="text-gray-300 hover:text-red-600 transition-colors p-1" 
+                            onClick={(e) => { e.stopPropagation(); onDeleteLead?.(lead.id); }}
+                            title="Excluir Lead"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                          <button 
+                            className="text-gray-300 hover:text-[#8B0000] transition-colors p-1" 
+                            onClick={(e) => { e.stopPropagation(); onViewLead?.(lead); }}
+                            title="Ver Detalhes"
+                          >
+                            <Eye size={14} />
+                          </button>
+                        </div>
                       </div>
 
                       <div className="space-y-1.5 mb-3 pl-2">

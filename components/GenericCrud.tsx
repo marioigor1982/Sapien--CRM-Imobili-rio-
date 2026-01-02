@@ -6,7 +6,7 @@ import { Plus, Edit2, Trash2, Search, X, Image as ImageIcon, Upload, Link as Lin
 interface GenericCrudProps {
   title: string;
   data: any[];
-  setData: (data: any[]) => void;
+  setData: React.Dispatch<React.SetStateAction<any[]>>;
   type: 'client' | 'broker' | 'property' | 'bank' | 'company';
   companies?: any[];
 }
@@ -23,7 +23,8 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
 
   const handleDelete = (id: string) => {
     if (confirm('Tem certeza que deseja excluir este registro permanentemente?')) {
-      setData(data.filter(item => item.id !== id));
+      setData(prev => prev.filter(item => item.id !== id));
+      if (viewingItem?.id === id) setIsViewModalOpen(false);
     }
   };
 
@@ -71,9 +72,9 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingItem) {
-      setData(data.map(item => item.id === editingItem.id ? formData : item));
+      setData(prev => prev.map(item => item.id === editingItem.id ? formData : item));
     } else {
-      setData([...data, formData]);
+      setData(prev => [...prev, formData]);
     }
     setIsModalOpen(false);
   };
@@ -356,7 +357,6 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
       );
     }
 
-    // Default viewing logic for others...
     return (
       <div className="space-y-4 max-h-[60vh] overflow-y-auto">
         {Object.entries(viewingItem).map(([key, value]) => (
@@ -399,76 +399,4 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end space-x-2">
                       <button onClick={() => handleOpenViewModal(item)} className="p-1.5 text-gray-400 hover:text-[#8B0000] hover:bg-red-50 rounded transition-all"><Eye size={16} /></button>
-                      <button onClick={() => handleOpenModal(item)} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all"><Edit2 size={16} /></button>
-                      <button onClick={() => handleDelete(item.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"><Trash2 size={16} /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {filteredData.length === 0 && <div className="py-20 text-center"><p className="text-gray-400">Nenhum registro encontrado.</p></div>}
-      </div>
-
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg my-8 overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="bg-[#8B0000] px-6 py-4 flex items-center justify-between text-white sticky top-0 z-10">
-              <h3 className="font-bold uppercase tracking-widest text-sm">{editingItem ? 'Editar' : 'Cadastrar'} {title.slice(0, -1)}</h3>
-              <button onClick={() => setIsModalOpen(false)} className="hover:rotate-90 transition-transform"><X size={20} /></button>
-            </div>
-            <form onSubmit={handleSave} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
-              {renderFormFields()}
-              <div className="flex justify-end space-x-3 mt-8 pt-4 border-t border-gray-100">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-100 transition-colors">Cancelar</button>
-                <button type="submit" className="px-6 py-2 bg-[#8B0000] text-white rounded-lg text-sm font-bold shadow-md hover:bg-[#6b0000] transition-colors">Salvar Registro</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {isViewModalOpen && viewingItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl my-8 overflow-hidden animate-in fade-in zoom-in duration-300">
-             <div className="p-6">
-                <div className="flex justify-end mb-2">
-                   <button onClick={() => setIsViewModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X size={24} className="text-gray-400" /></button>
-                </div>
-                {renderViewDetails()}
-             </div>
-             <div className="bg-gray-50 px-6 py-4 flex justify-between items-center border-t border-gray-100">
-                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">Sapien Intelligence Real Estate OS</span>
-                <button onClick={() => { setIsViewModalOpen(false); handleOpenModal(viewingItem); }} className="text-sm font-bold text-[#8B0000] hover:underline flex items-center"><Edit2 size={14} className="mr-2" />Editar Informações</button>
-             </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const InputField: React.FC<{ label: string; value: any; onChange: (v: string) => void; type?: string; step?: string }> = ({ label, value, onChange, type = "text", step }) => (
-  <div className="space-y-1">
-    <label className="text-xs font-bold text-gray-500 uppercase">{label}</label>
-    <input 
-      type={type} 
-      step={step} 
-      placeholder="Digite aqui..."
-      value={value || ''} 
-      onChange={e => onChange(e.target.value)} 
-      className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900 placeholder:text-gray-300" 
-    />
-  </div>
-);
-
-const DetailCard: React.FC<{ icon: React.ReactNode, label: string, value: string }> = ({ icon, label, value }) => (
-  <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-    <div className="text-[#8B0000] mb-2 opacity-80">{icon}</div>
-    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{label}</div>
-    <div className="text-sm font-bold text-gray-900 truncate">{value || 'N/A'}</div>
-  </div>
-);
-
-export default GenericCrud;
+                      <button onClick={() => handleOpenModal(item)} className="p-1.5 text-gray-400 hover:text-gray-600

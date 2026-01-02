@@ -15,7 +15,7 @@ import KanbanBoard from './components/KanbanBoard';
 import LeadTable from './components/LeadTable';
 import Login from './components/Login';
 import GenericCrud from './components/GenericCrud';
-import { X, User, Home, Landmark, Briefcase, Calendar, Clock, Edit2 } from 'lucide-react';
+import { X, User, Home, Landmark, Briefcase, Calendar, Clock, Edit2, Trash2 } from 'lucide-react';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -73,6 +73,14 @@ const App: React.FC = () => {
     }));
   };
 
+  const handleDeleteLead = (id: string) => {
+    if (confirm('Deseja realmente excluir este lead permanentemente?')) {
+      setLeads(prev => prev.filter(l => l.id !== id));
+      setIsLeadViewOpen(false);
+      setViewingLead(null);
+    }
+  };
+
   const openLeadModal = (lead: Lead | null = null) => {
     setEditingLead(lead);
     setIsLeadModalOpen(true);
@@ -86,7 +94,7 @@ const App: React.FC = () => {
 
   const saveLead = (leadData: Partial<Lead>) => {
     if (editingLead) {
-      setLeads(leads.map(l => l.id === editingLead.id ? { ...l, ...leadData } : l));
+      setLeads(prev => prev.map(l => l.id === editingLead.id ? { ...l, ...leadData } : l));
     } else {
       const newLead: Lead = {
         id: Math.random().toString(36).substr(2, 9),
@@ -100,7 +108,7 @@ const App: React.FC = () => {
         history: [{ phase: LeadPhase.ABERTURA_CREDITO, date: leadData.createdAt || new Date().toISOString() }],
         ...leadData
       };
-      setLeads([...leads, newLead]);
+      setLeads(prev => [...prev, newLead]);
     }
     setIsLeadModalOpen(false);
   };
@@ -124,6 +132,7 @@ const App: React.FC = () => {
             onAddLead={() => openLeadModal()}
             onEditLead={(l) => openLeadModal(l)}
             onViewLead={(l) => openLeadView(l)}
+            onDeleteLead={handleDeleteLead}
           />
         );
       case 'List':
@@ -138,20 +147,20 @@ const App: React.FC = () => {
             updatePhase={handleUpdateLeadPhase}
             onAddLead={() => openLeadModal()}
             onEditLead={(l) => openLeadModal(l)}
-            onDeleteLead={(id) => setLeads(leads.filter(l => l.id !== id))}
+            onDeleteLead={handleDeleteLead}
             onViewLead={(l) => openLeadView(l)}
           />
         );
       case 'Clientes':
-        return <GenericCrud title="Clientes" data={clients} setData={setClients} type="client" />;
+        return <GenericCrud title="Clientes" data={clients} setData={setClients as any} type="client" />;
       case 'Corretores':
-        return <GenericCrud title="Corretores" data={brokers} setData={setBrokers} type="broker" />;
+        return <GenericCrud title="Corretores" data={brokers} setData={setBrokers as any} type="broker" />;
       case 'Properties':
-        return <GenericCrud title="Imóveis" data={properties} setData={setProperties} type="property" companies={companies} />;
+        return <GenericCrud title="Imóveis" data={properties} setData={setProperties as any} type="property" companies={companies} />;
       case 'Bancos':
-        return <GenericCrud title="Bancos" data={banks} setData={setBanks} type="bank" />;
+        return <GenericCrud title="Bancos" data={banks} setData={setBanks as any} type="bank" />;
       case 'Construtoras':
-        return <GenericCrud title="Construtoras" data={companies} setData={setCompanies} type="company" />;
+        return <GenericCrud title="Construtoras" data={companies} setData={setCompanies as any} type="company" />;
       default:
         return <div>View not implemented</div>;
     }
@@ -196,6 +205,7 @@ const App: React.FC = () => {
           lead={viewingLead}
           onClose={() => setIsLeadViewOpen(false)}
           onEdit={() => openLeadModal(viewingLead)}
+          onDelete={() => handleDeleteLead(viewingLead.id)}
           clients={clients}
           brokers={brokers}
           properties={properties}
@@ -301,13 +311,14 @@ interface LeadDetailsModalProps {
   lead: Lead;
   onClose: () => void;
   onEdit: () => void;
+  onDelete: () => void;
   clients: Client[];
   brokers: Broker[];
   properties: Property[];
   banks: Bank[];
 }
 
-const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({ lead, onClose, onEdit, clients, brokers, properties, banks }) => {
+const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({ lead, onClose, onEdit, onDelete, clients, brokers, properties, banks }) => {
   const client = clients.find(c => c.id === lead.clientId);
   const property = properties.find(p => p.id === lead.propertyId);
   const broker = brokers.find(b => b.id === lead.brokerId);
@@ -422,6 +433,13 @@ const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({ lead, onClose, onEd
               ID: {lead.id.toUpperCase()}
             </div>
             <div className="flex space-x-3">
+              <button 
+                onClick={onDelete} 
+                className="flex items-center space-x-2 px-6 py-2 bg-white text-red-600 border border-red-200 rounded-lg font-bold text-sm hover:bg-red-50 transition-all"
+              >
+                <Trash2 size={16} />
+                <span>Excluir Lead</span>
+              </button>
               <button 
                 onClick={onEdit} 
                 className="flex items-center space-x-2 px-6 py-2 bg-[#8B0000] text-white rounded-lg font-bold text-sm shadow-lg hover:bg-[#6b0000] transition-all"
