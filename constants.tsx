@@ -26,8 +26,20 @@ export const INITIAL_COMPANIES: ConstructionCompany[] = [
   },
 ];
 
+// Added missing neighborhood, city, and state properties to satisfy the Property interface
 export const INITIAL_PROPERTIES: Property[] = [
-  { id: 'p1', title: 'Residencial Horizonte', type: 'Apartamento', value: 450000, address: 'Rua das Flores, 123', photos: ['https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&q=80&w=400'], constructionCompanyId: 'co1' },
+  { 
+    id: 'p1', 
+    title: 'Residencial Horizonte', 
+    type: 'Apartamento', 
+    value: 450000, 
+    address: 'Rua das Flores, 123', 
+    neighborhood: 'Jardim Paulista',
+    city: 'São Paulo',
+    state: 'SP',
+    photos: ['https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&q=80&w=400'], 
+    constructionCompanyId: 'co1' 
+  },
 ];
 
 export const INITIAL_BANKS: Bank[] = [

@@ -39,9 +39,12 @@ export interface Broker {
 export interface Property {
   id: string;
   title: string;
-  type: 'Casa' | 'Apartamento' | 'Terreno';
+  type: string;
   value: number;
   address: string;
+  neighborhood: string;
+  city: string;
+  state: string;
   photos: string[];
   constructionCompanyId: string;
 }

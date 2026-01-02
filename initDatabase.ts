@@ -25,19 +25,24 @@ export const initDatabase = async () => {
 
     // Inicializa Imóveis
     await addDoc(collection(db, "imoveis"), {
-      title: "Imóvel Exemplo",
+      title: "Mansão Suspensa Horizonte",
       type: "Apartamento",
-      value: 350000,
-      address: "Rua Exemplo, 123",
-      photos: []
+      value: 1250000,
+      address: "Av. Atlântica, 1000",
+      neighborhood: "Copacabana",
+      city: "Rio de Janeiro",
+      state: "RJ",
+      photos: [
+        "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800"
+      ]
     });
 
     // Inicializa Bancos
     await addDoc(collection(db, "bancos"), {
-      name: "Banco Exemplo",
+      name: "Caixa Econômica Federal",
       agency: "0001",
-      phone: "(00) 0000-0000",
-      email: "banco@exemplo.com",
+      phone: "(11) 4004-0001",
+      email: "atendimento@caixa.gov.br",
       avgRate: 9.5
     });
 
