@@ -26,6 +26,10 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, clients, properties }) => 
     return acc + (prop?.value || 0);
   }, 0);
 
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+  };
+
   return (
     <div className="space-y-6">
       {/* Cards de Métricas */}
@@ -50,7 +54,7 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, clients, properties }) => 
         />
         <MetricCard 
           label="Valor em Negociação" 
-          value={`R$ ${(totalValue / 1000000).toFixed(1)}M`} 
+          value={formatCurrency(totalValue)} 
           icon={<TrendingUp className="text-[#8B0000]" />} 
           trend="Meta: R$ 5M" 
         />

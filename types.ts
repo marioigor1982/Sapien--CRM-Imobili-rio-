@@ -48,6 +48,13 @@ export interface Property {
 export interface Bank {
   id: string;
   name: string;
+  agency: string;
+  address: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  phone: string;
+  email: string;
   avgRate: number;
   contact: string;
   logo?: string;
@@ -57,7 +64,12 @@ export interface ConstructionCompany {
   id: string;
   name: string;
   cnpj: string;
-  contact: string;
+  phone: string;
+  email: string;
+  address: string;
+  neighborhood: string;
+  city: string;
+  state: string;
 }
 
 export interface Lead {
@@ -72,4 +84,4 @@ export interface Lead {
   history: { phase: LeadPhase; date: string }[];
 }
 
-export type ViewType = 'Dashboard' | 'Kanban' | 'List' | 'Clients' | 'Brokers' | 'Properties' | 'Banks' | 'Companies';
+export type ViewType = 'Dashboard' | 'Kanban' | 'List' | 'Clientes' | 'Corretores' | 'Properties' | 'Bancos' | 'Construtoras';

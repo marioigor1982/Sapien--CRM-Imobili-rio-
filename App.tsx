@@ -15,7 +15,7 @@ import KanbanBoard from './components/KanbanBoard';
 import LeadTable from './components/LeadTable';
 import Login from './components/Login';
 import GenericCrud from './components/GenericCrud';
-import { X, User, Home, Landmark, Briefcase, Calendar, Clock, Edit2, ImageIcon } from 'lucide-react';
+import { X, User, Home, Landmark, Briefcase, Calendar, Clock, Edit2 } from 'lucide-react';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -96,8 +96,8 @@ const App: React.FC = () => {
         bankId: leadData.bankId || '',
         constructionCompanyId: leadData.constructionCompanyId || '',
         currentPhase: LeadPhase.ABERTURA_CREDITO,
-        createdAt: new Date().toISOString(),
-        history: [{ phase: LeadPhase.ABERTURA_CREDITO, date: new Date().toISOString() }],
+        createdAt: leadData.createdAt || new Date().toISOString(),
+        history: [{ phase: LeadPhase.ABERTURA_CREDITO, date: leadData.createdAt || new Date().toISOString() }],
         ...leadData
       };
       setLeads([...leads, newLead]);
@@ -142,15 +142,15 @@ const App: React.FC = () => {
             onViewLead={(l) => openLeadView(l)}
           />
         );
-      case 'Clients':
+      case 'Clientes':
         return <GenericCrud title="Clientes" data={clients} setData={setClients} type="client" />;
-      case 'Brokers':
+      case 'Corretores':
         return <GenericCrud title="Corretores" data={brokers} setData={setBrokers} type="broker" />;
       case 'Properties':
         return <GenericCrud title="Imóveis" data={properties} setData={setProperties} type="property" companies={companies} />;
-      case 'Banks':
+      case 'Bancos':
         return <GenericCrud title="Bancos" data={banks} setData={setBanks} type="bank" />;
-      case 'Companies':
+      case 'Construtoras':
         return <GenericCrud title="Construtoras" data={companies} setData={setCompanies} type="company" />;
       default:
         return <div>View not implemented</div>;
@@ -226,7 +226,8 @@ const LeadModal: React.FC<LeadModalProps> = ({ lead, onClose, onSave, clients, b
     propertyId: lead?.propertyId || '',
     bankId: lead?.bankId || '',
     constructionCompanyId: lead?.constructionCompanyId || '',
-    currentPhase: lead?.currentPhase || LeadPhase.ABERTURA_CREDITO
+    currentPhase: lead?.currentPhase || LeadPhase.ABERTURA_CREDITO,
+    createdAt: lead?.createdAt ? lead.createdAt.split('T')[0] : new Date().toISOString().split('T')[0]
   });
 
   return (
@@ -237,16 +238,28 @@ const LeadModal: React.FC<LeadModalProps> = ({ lead, onClose, onSave, clients, b
           <button onClick={onClose} className="hover:rotate-90 transition-transform"><X size={20} /></button>
         </div>
         <form onSubmit={(e) => { e.preventDefault(); onSave(data); }} className="p-6 space-y-4">
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-500 uppercase">Cliente</label>
-            <select className="w-full border border-gray-300 rounded-lg p-2 text-sm" value={data.clientId} onChange={e => setData({...data, clientId: e.target.value})}>
-              <option value="">Selecione um cliente...</option>
-              {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-500 uppercase">Data de Abertura</label>
+              <input 
+                type="date" 
+                className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none" 
+                value={data.createdAt} 
+                onChange={e => setData({...data, createdAt: e.target.value})}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-500 uppercase">Cliente</label>
+              <select className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none" value={data.clientId} onChange={e => setData({...data, clientId: e.target.value})}>
+                <option value="">Selecione...</option>
+                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
           </div>
+          
           <div className="space-y-1">
             <label className="text-xs font-bold text-gray-500 uppercase">Imóvel de Interesse</label>
-            <select className="w-full border border-gray-300 rounded-lg p-2 text-sm" value={data.propertyId} onChange={e => setData({...data, propertyId: e.target.value})}>
+            <select className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none" value={data.propertyId} onChange={e => setData({...data, propertyId: e.target.value})}>
               <option value="">Selecione um imóvel...</option>
               {properties.map(p => <option key={p.id} value={p.id}>{p.title} - R$ {p.value.toLocaleString()}</option>)}
             </select>
@@ -254,14 +267,14 @@ const LeadModal: React.FC<LeadModalProps> = ({ lead, onClose, onSave, clients, b
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-xs font-bold text-gray-500 uppercase">Corretor Responsável</label>
-              <select className="w-full border border-gray-300 rounded-lg p-2 text-sm" value={data.brokerId} onChange={e => setData({...data, brokerId: e.target.value})}>
+              <select className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none" value={data.brokerId} onChange={e => setData({...data, brokerId: e.target.value})}>
                 <option value="">Selecione...</option>
                 {brokers.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold text-gray-500 uppercase">Banco Preferencial</label>
-              <select className="w-full border border-gray-300 rounded-lg p-2 text-sm" value={data.bankId} onChange={e => setData({...data, bankId: e.target.value})}>
+              <select className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none" value={data.bankId} onChange={e => setData({...data, bankId: e.target.value})}>
                 <option value="">Selecione...</option>
                 {banks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
@@ -269,7 +282,7 @@ const LeadModal: React.FC<LeadModalProps> = ({ lead, onClose, onSave, clients, b
           </div>
           <div className="space-y-1">
             <label className="text-xs font-bold text-gray-500 uppercase">Fase do Pipeline</label>
-            <select className="w-full border border-gray-300 rounded-lg p-2 text-sm" value={data.currentPhase} onChange={e => setData({...data, currentPhase: e.target.value as LeadPhase})}>
+            <select className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none" value={data.currentPhase} onChange={e => setData({...data, currentPhase: e.target.value as LeadPhase})}>
               {PHASES_ORDER.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
@@ -333,7 +346,6 @@ const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({ lead, onClose, onEd
                     </div>
                   </div>
                   
-                  {/* Miniatura da Foto do Imóvel */}
                   <div className="shrink-0">
                     <div className="w-24 h-24 rounded-xl border-2 border-white shadow-md overflow-hidden bg-white group-hover:scale-110 transition-transform duration-300">
                       {property?.photos?.[0] ? (
@@ -346,8 +358,6 @@ const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({ lead, onClose, onEd
                     </div>
                   </div>
                 </div>
-                
-                {/* Background Decorativo */}
                 <Home size={60} className="absolute -right-6 -bottom-6 text-gray-200 opacity-20 group-hover:text-[#8B0000]/10 transition-colors pointer-events-none" />
               </div>
 

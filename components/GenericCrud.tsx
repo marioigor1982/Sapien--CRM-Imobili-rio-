@@ -1,6 +1,7 @@
 
 import React, { useState, useRef } from 'react';
-import { Plus, Edit2, Trash2, Search, X, Image as ImageIcon, Upload, Link as LinkIcon, Eye, MapPin, Building2, Tag, Landmark } from 'lucide-react';
+/* Added Briefcase to imports from lucide-react */
+import { Plus, Edit2, Trash2, Search, X, Image as ImageIcon, Upload, Link as LinkIcon, Eye, MapPin, Building2, Tag, Landmark, Phone, Mail, Globe, Briefcase } from 'lucide-react';
 
 interface GenericCrudProps {
   title: string;
@@ -21,7 +22,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDelete = (id: string) => {
-    if (confirm('Tem certeza que deseja excluir este registro?')) {
+    if (confirm('Tem certeza que deseja excluir este registro permanentemente?')) {
       setData(data.filter(item => item.id !== id));
     }
   };
@@ -34,8 +35,28 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
       setEditingItem(null);
       const defaults: any = { id: Math.random().toString(36).substr(2, 9) };
       if (type === 'client') { defaults.status = 'Ativo'; defaults.income = 0; }
-      if (type === 'bank') { defaults.avgRate = 0; defaults.logo = ''; }
+      if (type === 'bank') { 
+        defaults.avgRate = 0; 
+        defaults.logo = ''; 
+        defaults.agency = '';
+        defaults.address = '';
+        defaults.neighborhood = '';
+        defaults.city = '';
+        defaults.state = '';
+        defaults.phone = '';
+        defaults.email = '';
+      }
       if (type === 'property') { defaults.value = 0; defaults.photos = []; }
+      if (type === 'company') {
+        defaults.name = '';
+        defaults.cnpj = '';
+        defaults.phone = '';
+        defaults.email = '';
+        defaults.address = '';
+        defaults.neighborhood = '';
+        defaults.city = '';
+        defaults.state = '';
+      }
       setFormData(defaults);
     }
     setNewPhotoUrl('');
@@ -103,8 +124,8 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
       case 'client': return ['Nome', 'Documento', 'Telefone', 'Email', 'Renda', 'Status'];
       case 'broker': return ['Nome', 'CRECI', 'Telefone', 'Email'];
       case 'property': return ['Título', 'Tipo', 'Valor', 'Endereço'];
-      case 'bank': return ['Logo', 'Banco', 'Taxa Média', 'Contato'];
-      case 'company': return ['Nome', 'CNPJ', 'Contato'];
+      case 'bank': return ['Logo', 'Banco', 'Agência', 'Telefone', 'Taxa Média'];
+      case 'company': return ['Nome', 'CNPJ', 'Município', 'Telefone'];
       default: return [];
     }
   };
@@ -164,15 +185,17 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
             </div>
           </td>
           <td className="px-6 py-4 font-semibold hover:text-[#8B0000] cursor-pointer" onClick={() => handleOpenViewModal(item)}>{item.name}</td>
+          <td className="px-6 py-4 text-gray-500">{item.agency}</td>
+          <td className="px-6 py-4 text-gray-500">{item.phone}</td>
           <td className="px-6 py-4 text-gray-900 font-bold">{item.avgRate}%</td>
-          <td className="px-6 py-4 text-gray-500">{item.contact}</td>
         </>
       );
       case 'company': return (
         <>
           <td className="px-6 py-4 font-semibold hover:text-[#8B0000] cursor-pointer" onClick={() => handleOpenViewModal(item)}>{item.name}</td>
           <td className="px-6 py-4 text-gray-500">{item.cnpj}</td>
-          <td className="px-6 py-4 text-gray-500">{item.contact}</td>
+          <td className="px-6 py-4 text-gray-500">{item.city} / {item.state}</td>
+          <td className="px-6 py-4 text-gray-500">{item.phone}</td>
         </>
       );
     }
@@ -192,7 +215,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
             <InputField label="Renda (Mensal)" type="number" value={formData.income} onChange={v => setFormData({...formData, income: v})} />
             <div className="space-y-1">
               <label className="text-xs font-bold text-gray-500 uppercase">Status</label>
-              <select className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
+              <select className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
                 <option value="Ativo">Ativo</option>
                 <option value="Inativo">Inativo</option>
               </select>
@@ -214,7 +237,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-xs font-bold text-gray-500 uppercase">Tipo</label>
-              <select className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
+              <select className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
                 <option value="Casa">Casa</option>
                 <option value="Apartamento">Apartamento</option>
                 <option value="Terreno">Terreno</option>
@@ -225,7 +248,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
           <InputField label="Endereço Completo" value={formData.address} onChange={v => setFormData({...formData, address: v})} />
           <div className="space-y-1">
             <label className="text-xs font-bold text-gray-500 uppercase">Construtora</label>
-            <select className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none" value={formData.constructionCompanyId} onChange={e => setFormData({...formData, constructionCompanyId: e.target.value})}>
+            <select className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900" value={formData.constructionCompanyId} onChange={e => setFormData({...formData, constructionCompanyId: e.target.value})}>
               <option value="">Selecione...</option>
               {companies?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
@@ -236,7 +259,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
               <div className="flex space-x-2">
                 <div className="relative flex-1">
                   <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-                  <input type="text" placeholder="Colar URL..." className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#8B0000]" value={newPhotoUrl} onChange={e => setNewPhotoUrl(e.target.value)} />
+                  <input type="text" placeholder="Colar URL..." className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#8B0000] bg-white text-gray-900" value={newPhotoUrl} onChange={e => setNewPhotoUrl(e.target.value)} />
                 </div>
                 <button type="button" onClick={handleAddPhotoUrl} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-200 transition-colors">Add</button>
                 <button type="button" onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-[#8B0000]/10 text-[#8B0000] rounded-lg text-sm font-bold hover:bg-[#8B0000]/20 transition-colors flex items-center space-x-2"><Upload size={14} /><span>Upload</span></button>
@@ -258,33 +281,48 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
       );
       case 'bank': return (
         <>
-          <InputField label="Nome do Banco" value={formData.name} onChange={v => setFormData({...formData, name: v})} />
-          <InputField label="Taxa Média (%)" type="number" step="0.01" value={formData.avgRate} onChange={v => setFormData({...formData, avgRate: v})} />
-          <InputField label="Contato / Gerente" value={formData.contact} onChange={v => setFormData({...formData, contact: v})} />
+          <div className="grid grid-cols-2 gap-4">
+            <InputField label="Nome do Banco" value={formData.name} onChange={v => setFormData({...formData, name: v})} />
+            <InputField label="Nº da Agência" value={formData.agency} onChange={v => setFormData({...formData, agency: v})} />
+          </div>
+          <InputField label="Endereço da Agência" value={formData.address} onChange={v => setFormData({...formData, address: v})} />
+          <div className="grid grid-cols-3 gap-4">
+            <InputField label="Bairro" value={formData.neighborhood} onChange={v => setFormData({...formData, neighborhood: v})} />
+            <InputField label="Município" value={formData.city} onChange={v => setFormData({...formData, city: v})} />
+            <InputField label="UF" value={formData.state} onChange={v => setFormData({...formData, state: v})} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <InputField label="Telefone" value={formData.phone} onChange={v => setFormData({...formData, phone: v})} />
+            <InputField label="E-mail" type="email" value={formData.email} onChange={v => setFormData({...formData, email: v})} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <InputField label="Taxa Média (%)" type="number" step="0.01" value={formData.avgRate} onChange={v => setFormData({...formData, avgRate: v})} />
+            <InputField label="Nome do Contato" value={formData.contact} onChange={v => setFormData({...formData, contact: v})} />
+          </div>
           <div className="space-y-3 pt-4 border-t border-gray-100">
-            <label className="text-xs font-bold text-gray-500 uppercase flex items-center"><LinkIcon size={14} className="mr-2" />Logomarca do Banco</label>
+            <label className="text-xs font-bold text-gray-500 uppercase flex items-center"><LinkIcon size={14} className="mr-2" />Logomarca</label>
             <div className="flex space-x-2">
-              <div className="relative flex-1">
-                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-                <input type="text" placeholder="URL da logomarca..." className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#8B0000]" value={formData.logo || ''} onChange={e => setFormData({...formData, logo: e.target.value})} />
-              </div>
-              <button type="button" onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-[#8B0000]/10 text-[#8B0000] rounded-lg text-sm font-bold hover:bg-[#8B0000]/20 transition-colors flex items-center space-x-2"><Upload size={14} /><span>Upload</span></button>
+              <input type="text" placeholder="URL da logo..." className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#8B0000] outline-none" value={formData.logo || ''} onChange={e => setFormData({...formData, logo: e.target.value})} />
+              <button type="button" onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-gray-100 rounded-lg text-sm font-bold"><Upload size={14} /></button>
               <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
             </div>
-            {formData.logo && (
-              <div className="mt-2 w-20 h-20 bg-white rounded-xl border border-gray-200 p-2 flex items-center justify-center shadow-sm relative group">
-                <img src={formData.logo} alt="Preview" className="max-w-full max-h-full object-contain" />
-                <button type="button" onClick={() => setFormData({...formData, logo: ''})} className="absolute -top-2 -right-2 bg-red-600 text-white p-1 rounded-full shadow-lg"><X size={12} /></button>
-              </div>
-            )}
           </div>
         </>
       );
       case 'company': return (
         <>
-          <InputField label="Razão Social / Nome" value={formData.name} onChange={v => setFormData({...formData, name: v})} />
+          <InputField label="Razão Social" value={formData.name} onChange={v => setFormData({...formData, name: v})} />
           <InputField label="CNPJ" value={formData.cnpj} onChange={v => setFormData({...formData, cnpj: v})} />
-          <InputField label="Email / Telefone de Contato" value={formData.contact} onChange={v => setFormData({...formData, contact: v})} />
+          <div className="grid grid-cols-2 gap-4">
+            <InputField label="Telefone" value={formData.phone} onChange={v => setFormData({...formData, phone: v})} />
+            <InputField label="E-mail" type="email" value={formData.email} onChange={v => setFormData({...formData, email: v})} />
+          </div>
+          <InputField label="Endereço" value={formData.address} onChange={v => setFormData({...formData, address: v})} />
+          <div className="grid grid-cols-3 gap-4">
+            <InputField label="Bairro" value={formData.neighborhood} onChange={v => setFormData({...formData, neighborhood: v})} />
+            <InputField label="Município" value={formData.city} onChange={v => setFormData({...formData, city: v})} />
+            <InputField label="UF" value={formData.state} onChange={v => setFormData({...formData, state: v})} />
+          </div>
         </>
       );
     }
@@ -293,70 +331,34 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
   const renderViewDetails = () => {
     if (!viewingItem) return null;
 
-    if (type === 'property') {
-      const company = companies?.find(c => c.id === viewingItem.constructionCompanyId);
+    if (type === 'bank') {
       return (
         <div className="space-y-6">
-          <div className="bg-gray-50 -mx-6 -mt-6 p-6 border-b border-gray-200">
-            {viewingItem.photos && viewingItem.photos.length > 0 ? (
-              <div className="grid grid-cols-2 gap-4 h-64">
-                <div className="h-full rounded-xl overflow-hidden shadow-lg">
-                  <img src={viewingItem.photos[0]} alt="" className="w-full h-full object-cover" />
-                </div>
-                <div className="grid grid-rows-2 gap-4 h-full">
-                  {viewingItem.photos.slice(1, 3).map((p: string, i: number) => (
-                    <div key={i} className="rounded-xl overflow-hidden shadow-md">
-                      <img src={p} alt="" className="w-full h-full object-cover" />
-                    </div>
-                  ))}
-                  {viewingItem.photos.length <= 1 && <div className="bg-gray-200 rounded-xl flex items-center justify-center text-gray-400 font-bold uppercase text-[10px]">Sem fotos adicionais</div>}
-                </div>
-              </div>
-            ) : (
-              <div className="h-48 bg-gray-200 rounded-xl flex items-center justify-center text-gray-400">
-                <ImageIcon size={48} />
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-2xl font-bold text-gray-900">{viewingItem.title}</h4>
-                <div className="flex items-center text-gray-500 mt-1">
-                  <MapPin size={16} className="mr-1 text-red-500" />
-                  <span className="text-sm">{viewingItem.address}</span>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3">
-                <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold uppercase tracking-wider">{viewingItem.type}</span>
-                {company && <span className="px-3 py-1 bg-[#8B0000]/10 text-[#8B0000] rounded-full text-xs font-bold uppercase tracking-wider">{company.name}</span>}
-              </div>
+          <div className="flex items-center space-x-4">
+            <div className="w-20 h-20 bg-white border border-gray-100 rounded-2xl p-2 flex items-center justify-center shadow-md shrink-0">
+              {viewingItem.logo ? <img src={viewingItem.logo} alt="" className="max-w-full max-h-full object-contain" /> : <Landmark size={40} className="text-gray-200" />}
             </div>
-            <div className="bg-[#8B0000] text-white p-6 rounded-2xl shadow-xl flex flex-col justify-center">
-              <span className="text-xs uppercase font-bold tracking-widest opacity-80 mb-1">Valor do Imóvel</span>
-              <div className="text-3xl font-black">R$ {Number(viewingItem.value).toLocaleString('pt-BR')}</div>
+            <div>
+              <h4 className="text-2xl font-bold text-gray-900">{viewingItem.name}</h4>
+              <p className="text-sm text-gray-500">Agência: {viewingItem.agency}</p>
             </div>
           </div>
-
-          <div className="grid grid-cols-3 gap-4 pt-4">
-             <DetailCard icon={<Building2 size={18} />} label="Construtora" value={company?.name || 'N/A'} />
-             <DetailCard icon={<Tag size={18} />} label="Código SAP" value={viewingItem.id.toUpperCase()} />
-             <DetailCard icon={<ImageIcon size={18} />} label="Total Mídias" value={`${viewingItem.photos?.length || 0} Fotos`} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <DetailCard icon={<Phone size={18} />} label="Telefone" value={viewingItem.phone} />
+            <DetailCard icon={<Mail size={18} />} label="E-mail" value={viewingItem.email} />
+            <div className="col-span-2">
+               <DetailCard icon={<MapPin size={18} />} label="Endereço Completo" value={`${viewingItem.address}, ${viewingItem.neighborhood}, ${viewingItem.city}/${viewingItem.state}`} />
+            </div>
+            <DetailCard icon={<Tag size={18} />} label="Taxa Média" value={`${viewingItem.avgRate}%`} />
+            <DetailCard icon={<Briefcase size={18} />} label="Contato Responsável" value={viewingItem.contact} />
           </div>
         </div>
       );
     }
 
+    // Default viewing logic for others...
     return (
-      <div className="space-y-4">
-        {type === 'bank' && viewingItem.logo && (
-          <div className="flex justify-center mb-6">
-            <div className="w-24 h-24 bg-white rounded-2xl border border-gray-100 p-4 shadow-md flex items-center justify-center">
-              <img src={viewingItem.logo} alt={viewingItem.name} className="max-w-full max-h-full object-contain" />
-            </div>
-          </div>
-        )}
+      <div className="space-y-4 max-h-[60vh] overflow-y-auto">
         {Object.entries(viewingItem).map(([key, value]) => (
           key !== 'id' && key !== 'photos' && key !== 'logo' && (
             <div key={key} className="border-b border-gray-50 pb-2">
@@ -374,9 +376,9 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-          <input type="text" placeholder={`Buscar em ${title.toLowerCase()}...`} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B0000] w-full md:w-80" />
+          <input type="text" placeholder={`Buscar...`} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B0000] w-full md:w-80 bg-white text-gray-900" />
         </div>
-        <button onClick={() => handleOpenModal()} className="bg-[#8B0000] text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2 font-bold shadow-md hover:bg-[#6b0000] transition-colors"><Plus size={18} /><span>Cadastrar {title.slice(0, -1)}</span></button>
+        <button onClick={() => handleOpenModal()} className="bg-[#8B0000] text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2 font-bold shadow-md hover:bg-[#6b0000] transition-colors"><Plus size={18} /><span>Novo Cadastro</span></button>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -416,7 +418,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
               <h3 className="font-bold uppercase tracking-widest text-sm">{editingItem ? 'Editar' : 'Cadastrar'} {title.slice(0, -1)}</h3>
               <button onClick={() => setIsModalOpen(false)} className="hover:rotate-90 transition-transform"><X size={20} /></button>
             </div>
-            <form onSubmit={handleSave} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+            <form onSubmit={handleSave} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
               {renderFormFields()}
               <div className="flex justify-end space-x-3 mt-8 pt-4 border-t border-gray-100">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-100 transition-colors">Cancelar</button>
@@ -450,7 +452,14 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
 const InputField: React.FC<{ label: string; value: any; onChange: (v: string) => void; type?: string; step?: string }> = ({ label, value, onChange, type = "text", step }) => (
   <div className="space-y-1">
     <label className="text-xs font-bold text-gray-500 uppercase">{label}</label>
-    <input type={type} step={step} value={value || ''} onChange={e => onChange(e.target.value)} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none" />
+    <input 
+      type={type} 
+      step={step} 
+      placeholder="Digite aqui..."
+      value={value || ''} 
+      onChange={e => onChange(e.target.value)} 
+      className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900 placeholder:text-gray-300" 
+    />
   </div>
 );
 
@@ -458,7 +467,7 @@ const DetailCard: React.FC<{ icon: React.ReactNode, label: string, value: string
   <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
     <div className="text-[#8B0000] mb-2 opacity-80">{icon}</div>
     <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{label}</div>
-    <div className="text-sm font-bold text-gray-900 truncate">{value}</div>
+    <div className="text-sm font-bold text-gray-900 truncate">{value || 'N/A'}</div>
   </div>
 );
 

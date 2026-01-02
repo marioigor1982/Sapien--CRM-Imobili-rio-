@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { LayoutDashboard, Trello, List, Users, Briefcase, Home, Landmark, Building2 } from 'lucide-react';
-import { Client, Broker, Property, Bank, ConstructionCompany, Lead, LeadPhase, ViewType } from './types';
+import { Client, Broker, Property, Bank, ConstructionCompany, Lead, LeadPhase } from './types';
 
 export const INITIAL_CLIENTS: Client[] = [
   { id: 'c1', name: 'João Silva', taxId: '123.456.789-00', phone: '(11) 98888-7777', email: 'joao@email.com', income: 8500, status: 'Ativo' },
@@ -13,7 +13,17 @@ export const INITIAL_BROKERS: Broker[] = [
 ];
 
 export const INITIAL_COMPANIES: ConstructionCompany[] = [
-  { id: 'co1', name: 'Gafisa', cnpj: '01.234.567/0001-99', contact: 'contato@gafisa.com.br' },
+  { 
+    id: 'co1', 
+    name: 'Gafisa', 
+    cnpj: '01.234.567/0001-99', 
+    phone: '(11) 3000-0000', 
+    email: 'contato@gafisa.com.br',
+    address: 'Av. Nações Unidas, 12901',
+    neighborhood: 'Brooklin',
+    city: 'São Paulo',
+    state: 'SP'
+  },
 ];
 
 export const INITIAL_PROPERTIES: Property[] = [
@@ -24,15 +34,29 @@ export const INITIAL_BANKS: Bank[] = [
   { 
     id: 'b1', 
     name: 'Caixa Econômica', 
+    agency: '1234',
+    address: 'Av. Paulista, 100',
+    neighborhood: 'Bela Vista',
+    city: 'São Paulo',
+    state: 'SP',
+    phone: '(11) 4004-0104',
+    email: 'agencia1234@caixa.gov.br',
     avgRate: 9.5, 
-    contact: 'gerente.caixa@caixa.gov.br',
+    contact: 'Gerente João',
     logo: 'https://images.seeklogo.com/logo-png/2/1/caixa-economica-federal-logo-png_seeklogo-24768.png'
   },
   { 
     id: 'b2', 
     name: 'Itaú', 
+    agency: '0567',
+    address: 'Rua Faria Lima, 3500',
+    neighborhood: 'Itaim Bibi',
+    city: 'São Paulo',
+    state: 'SP',
+    phone: '(11) 4004-4828',
+    email: 'atendimento@itau.com.br',
     avgRate: 10.2, 
-    contact: 'agencia@itau.com.br',
+    contact: 'Gerente Maria',
     logo: 'https://images.seeklogo.com/logo-png/51/1/itau-logo-png_seeklogo-512719.png'
   },
 ];
@@ -48,17 +72,6 @@ export const INITIAL_LEADS: Lead[] = [
     currentPhase: LeadPhase.ABERTURA_CREDITO, 
     createdAt: new Date().toISOString(),
     history: [{ phase: LeadPhase.ABERTURA_CREDITO, date: new Date().toISOString() }]
-  },
-  { 
-    id: 'l2', 
-    clientId: 'c2', 
-    brokerId: 'br1', 
-    propertyId: 'p1', 
-    bankId: 'b2', 
-    constructionCompanyId: 'co1', 
-    currentPhase: LeadPhase.VISITA_IMOVEL, 
-    createdAt: new Date().toISOString(),
-    history: [{ phase: LeadPhase.ABERTURA_CREDITO, date: new Date().toISOString() }]
   }
 ];
 
@@ -67,9 +80,9 @@ export const MENU_ITEMS = [
   { id: 'Kanban', label: 'Pipeline (Kanban)', icon: <Trello size={20} /> },
   { id: 'List', label: 'Lista de Leads', icon: <List size={20} /> },
   { type: 'divider' },
-  { id: 'Clients', label: 'Clientes', icon: <Users size={20} /> },
-  { id: 'Brokers', label: 'Corretores', icon: <Briefcase size={20} /> },
+  { id: 'Clientes', label: 'Clientes', icon: <Users size={20} /> },
+  { id: 'Corretores', label: 'Corretores', icon: <Briefcase size={20} /> },
   { id: 'Properties', label: 'Imóveis', icon: <Home size={20} /> },
-  { id: 'Banks', label: 'Bancos', icon: <Landmark size={20} /> },
-  { id: 'Companies', label: 'Construtoras', icon: <Building2 size={20} /> },
+  { id: 'Bancos', label: 'Bancos', icon: <Landmark size={20} /> },
+  { id: 'Construtoras', label: 'Construtoras', icon: <Building2 size={20} /> },
 ];

@@ -36,7 +36,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               <input 
                 type="text" 
                 defaultValue="admin@sapiencrm.com"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-[#8B0000] transition-all placeholder:text-gray-500"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-[#8B0000] transition-all placeholder:text-gray-500 text-white font-medium"
                 placeholder="Insira seu e-mail"
               />
             </div>
@@ -46,7 +46,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               <input 
                 type="password" 
                 defaultValue="••••••••"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-[#8B0000] transition-all placeholder:text-gray-500"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-[#8B0000] transition-all placeholder:text-gray-500 text-white font-medium"
                 placeholder="Insira sua senha"
               />
             </div>
