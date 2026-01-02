@@ -1,7 +1,10 @@
 
 import React, { useState, useRef } from 'react';
-/* Added Briefcase to imports from lucide-react */
-import { Plus, Edit2, Trash2, Search, X, Image as ImageIcon, Upload, Link as LinkIcon, Eye, MapPin, Building2, Tag, Landmark, Phone, Mail, Globe, Briefcase } from 'lucide-react';
+import { 
+  Plus, Edit2, Trash2, Search, X, Image as ImageIcon, 
+  Upload, Link as LinkIcon, Eye, MapPin, Building2, 
+  Tag, Landmark, Phone, Mail, Globe, Briefcase 
+} from 'lucide-react';
 
 interface GenericCrudProps {
   title: string;
@@ -216,7 +219,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
             <InputField label="Renda (Mensal)" type="number" value={formData.income} onChange={v => setFormData({...formData, income: v})} />
             <div className="space-y-1">
               <label className="text-xs font-bold text-gray-500 uppercase">Status</label>
-              <select className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
+              <select className="w-full border border-gray-700 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-[#1F1F1F] text-white" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
                 <option value="Ativo">Ativo</option>
                 <option value="Inativo">Inativo</option>
               </select>
@@ -238,7 +241,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-xs font-bold text-gray-500 uppercase">Tipo</label>
-              <select className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
+              <select className="w-full border border-gray-700 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-[#1F1F1F] text-white" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
                 <option value="Casa">Casa</option>
                 <option value="Apartamento">Apartamento</option>
                 <option value="Terreno">Terreno</option>
@@ -249,27 +252,27 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
           <InputField label="Endereço Completo" value={formData.address} onChange={v => setFormData({...formData, address: v})} />
           <div className="space-y-1">
             <label className="text-xs font-bold text-gray-500 uppercase">Construtora</label>
-            <select className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900" value={formData.constructionCompanyId} onChange={e => setFormData({...formData, constructionCompanyId: e.target.value})}>
+            <select className="w-full border border-gray-700 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-[#1F1F1F] text-white" value={formData.constructionCompanyId} onChange={e => setFormData({...formData, constructionCompanyId: e.target.value})}>
               <option value="">Selecione...</option>
               {companies?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
-          <div className="space-y-3 pt-4 border-t border-gray-100">
+          <div className="space-y-3 pt-4 border-t border-gray-800">
             <label className="text-xs font-bold text-gray-500 uppercase flex items-center"><ImageIcon size={14} className="mr-2" />Gestão de Fotos</label>
             <div className="flex flex-col space-y-3">
               <div className="flex space-x-2">
                 <div className="relative flex-1">
                   <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-                  <input type="text" placeholder="Colar URL..." className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#8B0000] bg-white text-gray-900" value={newPhotoUrl} onChange={e => setNewPhotoUrl(e.target.value)} />
+                  <input type="text" placeholder="Colar URL..." className="w-full pl-9 pr-4 py-2 border border-gray-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#8B0000] bg-[#1F1F1F] text-white" value={newPhotoUrl} onChange={e => setNewPhotoUrl(e.target.value)} />
                 </div>
-                <button type="button" onClick={handleAddPhotoUrl} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-200 transition-colors">Add</button>
+                <button type="button" onClick={handleAddPhotoUrl} className="px-4 py-2 bg-gray-800 text-gray-200 rounded-lg text-sm font-bold hover:bg-gray-700 transition-colors">Add</button>
                 <button type="button" onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-[#8B0000]/10 text-[#8B0000] rounded-lg text-sm font-bold hover:bg-[#8B0000]/20 transition-colors flex items-center space-x-2"><Upload size={14} /><span>Upload</span></button>
                 <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
               </div>
               {formData.photos && formData.photos.length > 0 && (
                 <div className="grid grid-cols-4 gap-2 mt-2">
                   {formData.photos.map((url: string, idx: number) => (
-                    <div key={idx} className="relative group aspect-square rounded-lg overflow-hidden border border-gray-200">
+                    <div key={idx} className="relative group aspect-square rounded-lg overflow-hidden border border-gray-800">
                       <img src={url} alt="" className="w-full h-full object-cover" />
                       <button type="button" onClick={() => removePhoto(idx)} className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={10} /></button>
                     </div>
@@ -300,11 +303,11 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
             <InputField label="Taxa Média (%)" type="number" step="0.01" value={formData.avgRate} onChange={v => setFormData({...formData, avgRate: v})} />
             <InputField label="Nome do Contato" value={formData.contact} onChange={v => setFormData({...formData, contact: v})} />
           </div>
-          <div className="space-y-3 pt-4 border-t border-gray-100">
+          <div className="space-y-3 pt-4 border-t border-gray-800">
             <label className="text-xs font-bold text-gray-500 uppercase flex items-center"><LinkIcon size={14} className="mr-2" />Logomarca</label>
             <div className="flex space-x-2">
-              <input type="text" placeholder="URL da logo..." className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#8B0000] outline-none" value={formData.logo || ''} onChange={e => setFormData({...formData, logo: e.target.value})} />
-              <button type="button" onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-gray-100 rounded-lg text-sm font-bold"><Upload size={14} /></button>
+              <input type="text" placeholder="URL da logo..." className="flex-1 px-4 py-2 border border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-[#1F1F1F] text-white" value={formData.logo || ''} onChange={e => setFormData({...formData, logo: e.target.value})} />
+              <button type="button" onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-gray-800 rounded-lg text-sm font-bold"><Upload size={14} /></button>
               <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
             </div>
           </div>
@@ -399,4 +402,76 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end space-x-2">
                       <button onClick={() => handleOpenViewModal(item)} className="p-1.5 text-gray-400 hover:text-[#8B0000] hover:bg-red-50 rounded transition-all"><Eye size={16} /></button>
-                      <button onClick={() => handleOpenModal(item)} className="p-1.5 text-gray-400 hover:text-gray-600
+                      <button onClick={() => handleOpenModal(item)} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all"><Edit2 size={16} /></button>
+                      <button onClick={() => handleDelete(item.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"><Trash2 size={16} /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {filteredData.length === 0 && <div className="py-20 text-center"><p className="text-gray-400">Nenhum registro encontrado.</p></div>}
+      </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg my-8 overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="bg-[#8B0000] px-6 py-4 flex items-center justify-between text-white sticky top-0 z-10">
+              <h3 className="font-bold uppercase tracking-widest text-sm">{editingItem ? 'Editar' : 'Cadastrar'} {title.slice(0, -1)}</h3>
+              <button onClick={() => setIsModalOpen(false)} className="hover:rotate-90 transition-transform"><X size={20} /></button>
+            </div>
+            <form onSubmit={handleSave} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+              {renderFormFields()}
+              <div className="flex justify-end space-x-3 mt-8 pt-4 border-t border-gray-100">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-100 transition-colors">Cancelar</button>
+                <button type="submit" className="px-6 py-2 bg-[#8B0000] text-white rounded-lg text-sm font-bold shadow-md hover:bg-[#6b0000] transition-colors">Salvar Registro</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isViewModalOpen && viewingItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl my-8 overflow-hidden animate-in fade-in zoom-in duration-300">
+             <div className="p-6">
+                <div className="flex justify-end mb-2">
+                   <button onClick={() => setIsViewModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X size={24} className="text-gray-400" /></button>
+                </div>
+                {renderViewDetails()}
+             </div>
+             <div className="bg-gray-50 px-6 py-4 flex justify-between items-center border-t border-gray-100">
+                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">Sapien Intelligence Real Estate OS</span>
+                <button onClick={() => { setIsViewModalOpen(false); handleOpenModal(viewingItem); }} className="text-sm font-bold text-[#8B0000] hover:underline flex items-center"><Edit2 size={14} className="mr-2" />Editar Informações</button>
+             </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const InputField: React.FC<{ label: string; value: any; onChange: (v: string) => void; type?: string; step?: string }> = ({ label, value, onChange, type = "text", step }) => (
+  <div className="space-y-1">
+    <label className="text-xs font-bold text-gray-500 uppercase">{label}</label>
+    <input 
+      type={type} 
+      step={step} 
+      placeholder="Digite aqui..."
+      value={value || ''} 
+      onChange={e => onChange(e.target.value)} 
+      className="w-full border border-gray-700 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-[#1F1F1F] text-white placeholder:text-gray-500" 
+    />
+  </div>
+);
+
+const DetailCard: React.FC<{ icon: React.ReactNode, label: string, value: string }> = ({ icon, label, value }) => (
+  <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+    <div className="text-[#8B0000] mb-2 opacity-80">{icon}</div>
+    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{label}</div>
+    <div className="text-sm font-bold text-gray-900 truncate">{value || 'N/A'}</div>
+  </div>
+);
+
+export default GenericCrud;

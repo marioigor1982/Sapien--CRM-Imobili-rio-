@@ -21,10 +21,13 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, clients, properties }) => 
 
   const COLORS = ['#8B0000', '#C0C0C0', '#4A4A4A', '#D1D5DB', '#6B7280', '#1F1F1F'];
 
-  const totalValue = leads.reduce((acc, lead) => {
-    const prop = properties.find(p => p.id === lead.propertyId);
-    return acc + (prop?.value || 0);
-  }, 0);
+  // Nova lógica: Somar apenas leads na fase de "Aprovação de Crédito"
+  const totalValueInNegotiation = leads
+    .filter(l => l.currentPhase === LeadPhase.APROVACAO_CREDITO)
+    .reduce((acc, lead) => {
+      const prop = properties.find(p => p.id === lead.propertyId);
+      return acc + (prop?.value || 0);
+    }, 0);
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
@@ -53,10 +56,10 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, clients, properties }) => 
           trend="Atualizado hoje" 
         />
         <MetricCard 
-          label="Valor em Negociação" 
-          value={formatCurrency(totalValue)} 
+          label="Valor em Aprovação" 
+          value={formatCurrency(totalValueInNegotiation)} 
           icon={<TrendingUp className="text-[#8B0000]" />} 
-          trend="Meta: R$ 5M" 
+          trend="Fase: Apr. de Crédito" 
         />
       </div>
 
