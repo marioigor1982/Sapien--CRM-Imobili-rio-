@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
 } from 'recharts';
-import { TrendingUp, Users, Home, Activity, CreditCard, DollarSign } from 'lucide-react';
+import { TrendingUp, Activity, CreditCard, DollarSign, Home } from 'lucide-react';
 
 interface DashboardProps {
   leads: Lead[];
@@ -24,9 +24,7 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, clients, properties }) => 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('pt-BR', { 
       style: 'currency', 
-      currency: 'BRL',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      currency: 'BRL'
     }).format(val);
   };
 
@@ -34,45 +32,44 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, clients, properties }) => 
   const leadsInAbertura = leads.filter(l => l.currentPhase === LeadPhase.ABERTURA_CREDITO);
   const totalValueAbertura = leadsInAbertura.reduce((acc, lead) => {
     const prop = properties.find(p => p.id === lead.propertyId);
-    return acc + Number(prop?.value || 0);
+    return acc + (Number(prop?.value) || 0);
   }, 0);
 
-  // SOMA: Todos os leads APÓS a fase de Abertura de Crédito (Aprovação em diante)
+  // SOMA: Todos os leads APÓS a fase de Abertura de Crédito
   const leadsEmAprovacao = leads.filter(l => l.currentPhase !== LeadPhase.ABERTURA_CREDITO);
   const totalValueEmAprovacao = leadsEmAprovacao.reduce((acc, lead) => {
     const prop = properties.find(p => p.id === lead.propertyId);
-    return acc + Number(prop?.value || 0);
+    return acc + (Number(prop?.value) || 0);
   }, 0);
 
   return (
     <div className="space-y-6">
-      {/* Cards de Métricas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard 
           label="Total de Leads" 
           value={leads.length} 
           icon={<Activity className="text-blue-500" />} 
-          trend="Total no Funil" 
+          trend="Fluxo Ativo" 
         />
         <MetricCard 
           label="VGV Abertura" 
           value={formatCurrency(totalValueAbertura)} 
-          subValue={`${leadsInAbertura.length} leads em Abertura`}
+          subValue={`${leadsInAbertura.length} leads`}
           icon={<CreditCard className="text-gray-400" />} 
-          trend="Fase Inicial" 
+          trend="Início Pipeline" 
         />
         <MetricCard 
           label="Valor em Aprovação" 
           value={formatCurrency(totalValueEmAprovacao)} 
-          subValue={`${leadsEmAprovacao.length} leads avançados`}
+          subValue={`${leadsEmAprovacao.length} leads`}
           icon={<DollarSign className="text-[#8B0000]" />} 
-          trend="Somatório Total" 
+          trend="Soma Monetária" 
         />
         <MetricCard 
           label="Imóveis Ativos" 
           value={properties.length} 
           icon={<Home className="text-purple-500" />} 
-          trend="Portfólio Sapien" 
+          trend="Estoque" 
         />
       </div>
 

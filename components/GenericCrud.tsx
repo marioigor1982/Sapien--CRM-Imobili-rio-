@@ -2,28 +2,26 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { 
   Plus, Edit2, Trash2, Search, X, Image as ImageIcon, 
-  Upload, Link as LinkIcon, Eye, MapPin, Building2, 
-  Tag, Landmark, Phone, Mail, Globe, Briefcase, DollarSign, CheckCircle, Clock
+  Eye, MapPin, Landmark, Briefcase, CheckCircle, Clock
 } from 'lucide-react';
 import { LeadPhase } from '../types';
 
 interface GenericCrudProps {
   title: string;
   data: any[];
-  setData: React.Dispatch<React.SetStateAction<any[]>>;
+  setData: (data: any[]) => void; // Standardized for Firestore sync
   type: 'client' | 'broker' | 'property' | 'bank' | 'company';
-  companies?: any[];
+  onSave?: (data: any) => Promise<void>;
+  onDelete?: (id: string) => Promise<void>;
 }
 
-const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, companies }) => {
+const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, onDelete }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [viewingItem, setViewingItem] = useState<any>(null);
   const [formData, setFormData] = useState<any>({});
-  const [newPhotoUrl, setNewPhotoUrl] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const leads = useMemo(() => {
     const saved = localStorage.getItem('sapien_leads');
@@ -35,9 +33,9 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
     return saved ? JSON.parse(saved) : [];
   }, [isViewModalOpen, isModalOpen]);
 
-  const handleDelete = (id: string) => {
-    if (confirm('Tem certeza que deseja excluir este registro permanentemente?')) {
-      setData(prev => prev.filter(item => item.id !== id));
+  const handleDelete = async (id: string) => {
+    if (confirm('Tem certeza que deseja excluir este registro?')) {
+      if (onDelete) await onDelete(id);
       if (viewingItem?.id === id) setIsViewModalOpen(false);
     }
   };
@@ -48,15 +46,13 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
       setFormData({ ...item });
     } else {
       setEditingItem(null);
-      const defaults: any = { id: Math.random().toString(36).substr(2, 9) };
+      const defaults: any = {};
       if (type === 'client') { defaults.status = 'Ativo'; defaults.income = 0; }
       if (type === 'broker') { defaults.commissionRate = 0; }
       if (type === 'bank') { defaults.avgRate = 0; }
       if (type === 'property') { defaults.value = 0; defaults.photos = []; }
-      if (type === 'company') { defaults.city = ''; defaults.state = ''; }
       setFormData(defaults);
     }
-    setNewPhotoUrl('');
     setIsModalOpen(true);
   };
 
@@ -65,14 +61,12 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
     setIsViewModalOpen(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingItem) {
-      setData(prev => prev.map(item => item.id === editingItem.id ? formData : item));
-    } else {
-      setData(prev => [...prev, formData]);
+    if (onSave) {
+      await onSave(formData);
+      setIsModalOpen(false);
     }
-    setIsModalOpen(false);
   };
 
   const filteredData = data.filter(item => {
@@ -234,16 +228,9 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
 
     if (type === 'broker') {
       const brokerLeads = leads.filter((l: any) => l.brokerId === viewingItem.id);
-      
-      const recebidosLeads = brokerLeads.filter((l: any) => 
-        l.currentPhase === LeadPhase.ASSINATURA_CONTRATO
-      );
-
+      const recebidosLeads = brokerLeads.filter((l: any) => l.currentPhase === LeadPhase.ASSINATURA_CONTRATO);
       const aReceberLeads = brokerLeads.filter((l: any) => 
-        l.currentPhase === LeadPhase.APROVACAO_CREDITO || 
-        l.currentPhase === LeadPhase.VISITA_IMOVEL ||
-        l.currentPhase === LeadPhase.ENGENHARIA ||
-        l.currentPhase === LeadPhase.EMISSAO_CONTRATO
+        l.currentPhase !== LeadPhase.ABERTURA_CREDITO && l.currentPhase !== LeadPhase.ASSINATURA_CONTRATO
       );
 
       const calculateComission = (leadsList: any[]) => leadsList.reduce((acc, l) => {
@@ -262,49 +249,17 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
             </div>
             <div>
               <h4 className="text-2xl font-black text-gray-900">{viewingItem.name}</h4>
-              <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">CRECI: {viewingItem.creci} • {viewingItem.commissionRate}% Comissão</p>
+              <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">CRECI: {viewingItem.creci} • {viewingItem.commissionRate}% Com.</p>
             </div>
           </div>
-
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-green-50 p-4 rounded-2xl border border-green-100">
-              <div className="flex items-center text-green-600 mb-2">
-                <CheckCircle size={16} className="mr-2" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Recebidos (Contratos)</span>
-              </div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-green-600 block mb-1">Recebidos</span>
               <p className="text-xl font-black text-green-900">{formatCurrency(valRecebidos)}</p>
-              <p className="text-[10px] text-green-700 font-bold">{recebidosLeads.length} finalizados</p>
             </div>
-
             <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
-              <div className="flex items-center text-blue-600 mb-2">
-                <Clock size={16} className="mr-2" />
-                <span className="text-[10px] font-black uppercase tracking-widest">A Receber (Fluxo)</span>
-              </div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 block mb-1">A Receber</span>
               <p className="text-xl font-black text-blue-900">{formatCurrency(valAReceber)}</p>
-              <p className="text-[10px] text-blue-700 font-bold">{aReceberLeads.length} em aprovação</p>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-100 pt-4">
-            <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Pipeline do Corretor</h5>
-            <div className="space-y-2">
-              {brokerLeads.length > 0 ? brokerLeads.map((l: any) => {
-                const prop = properties.find((p: any) => p.id === l.propertyId);
-                const comValue = ((prop?.value || 0) * (viewingItem.commissionRate / 100));
-                return (
-                  <div key={l.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
-                    <div className="flex-1">
-                      <p className="text-xs font-bold text-gray-900">{prop?.title || 'Lead s/ imóvel'}</p>
-                      <p className={`text-[10px] uppercase font-black ${l.currentPhase === LeadPhase.ASSINATURA_CONTRATO ? 'text-green-600' : 'text-blue-500'}`}>{l.currentPhase}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs font-black text-[#8B0000]">{formatCurrency(comValue)}</p>
-                      <p className="text-[10px] text-gray-400 font-bold uppercase">Comissão</p>
-                    </div>
-                  </div>
-                );
-              }) : <p className="text-xs text-gray-400 italic text-center py-4">Nenhum lead vinculado.</p>}
             </div>
           </div>
         </div>
@@ -362,21 +317,20 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
             </tbody>
           </table>
         </div>
-        {filteredData.length === 0 && <div className="py-20 text-center"><p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Nenhum registro encontrado</p></div>}
       </div>
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg my-8 overflow-hidden animate-in fade-in zoom-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg my-8 overflow-hidden">
             <div className="bg-[#8B0000] px-6 py-4 flex items-center justify-between text-white sticky top-0 z-10">
-              <h3 className="font-bold uppercase tracking-widest text-sm">{editingItem ? 'Editar' : 'Cadastrar'} {title.slice(0, -1)}</h3>
-              <button onClick={() => setIsModalOpen(false)} className="hover:rotate-90 transition-transform"><X size={20} /></button>
+              <h3 className="font-bold uppercase tracking-widest text-sm">{editingItem ? 'Editar' : 'Cadastrar'} {title}</h3>
+              <button onClick={() => setIsModalOpen(false)}><X size={20} /></button>
             </div>
-            <form onSubmit={handleSave} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+            <form onSubmit={handleFormSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
               {renderFormFields()}
               <div className="flex justify-end space-x-3 mt-8 pt-4 border-t border-gray-100">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-100 transition-colors">Cancelar</button>
-                <button type="submit" className="px-6 py-2 bg-[#8B0000] text-white rounded-lg text-sm font-bold shadow-md hover:bg-[#6b0000] transition-colors">Salvar Registro</button>
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2 text-gray-500 font-bold">Cancelar</button>
+                <button type="submit" className="px-6 py-2 bg-[#8B0000] text-white rounded-lg font-bold">Salvar</button>
               </div>
             </form>
           </div>
@@ -391,10 +345,6 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
                    <button onClick={() => setIsViewModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X size={24} className="text-gray-400" /></button>
                 </div>
                 {renderViewDetails()}
-             </div>
-             <div className="bg-gray-50 px-6 py-4 flex justify-between items-center border-t border-gray-100">
-                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">Sapien Intelligence Real Estate OS</span>
-                <button onClick={() => { setIsViewModalOpen(false); handleOpenModal(viewingItem); }} className="text-sm font-bold text-[#8B0000] hover:underline flex items-center"><Edit2 size={14} className="mr-2" />Editar Informações</button>
              </div>
           </div>
         </div>
