@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
 } from 'recharts';
-import { TrendingUp, Users, Home, Activity, CreditCard } from 'lucide-react';
+import { TrendingUp, Users, Home, Activity, CreditCard, DollarSign } from 'lucide-react';
 
 interface DashboardProps {
   leads: Lead[];
@@ -21,14 +21,14 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, clients, properties }) => 
 
   const COLORS = ['#8B0000', '#C0C0C0', '#4A4A4A', '#D1D5DB', '#6B7280', '#1F1F1F'];
 
-  // Métricas Abertura de Crédito (Fase Inicial)
+  // SOMA: Leads apenas na fase de Abertura de Crédito
   const leadsInAbertura = leads.filter(l => l.currentPhase === LeadPhase.ABERTURA_CREDITO);
   const totalValueAbertura = leadsInAbertura.reduce((acc, lead) => {
     const prop = properties.find(p => p.id === lead.propertyId);
     return acc + (prop?.value || 0);
   }, 0);
 
-  // Valor em Aprovação: Soma de todos os leads APÓS a Abertura de Crédito
+  // SOMA: Todos os leads APÓS a fase de Abertura de Crédito
   const leadsEmAprovacao = leads.filter(l => l.currentPhase !== LeadPhase.ABERTURA_CREDITO);
   const totalValueEmAprovacao = leadsEmAprovacao.reduce((acc, lead) => {
     const prop = properties.find(p => p.id === lead.propertyId);
@@ -47,21 +47,21 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, clients, properties }) => 
           label="Total de Leads" 
           value={leads.length} 
           icon={<Activity className="text-blue-500" />} 
-          trend="Volume de pipeline" 
+          trend="Total no Funil" 
         />
         <MetricCard 
-          label="Abertura de Crédito" 
+          label="VGV Abertura" 
           value={formatCurrency(totalValueAbertura)} 
-          subValue={`${leadsInAbertura.length} leads ativos`}
+          subValue={`${leadsInAbertura.length} leads em Abertura`}
           icon={<CreditCard className="text-gray-400" />} 
-          trend="Fase inicial" 
+          trend="Subtrai ao avançar" 
         />
         <MetricCard 
           label="Valor em Aprovação" 
           value={formatCurrency(totalValueEmAprovacao)} 
-          subValue={`${leadsEmAprovacao.length} leads avançados`}
-          icon={<TrendingUp className="text-[#8B0000]" />} 
-          trend="Pós-Abertura" 
+          subValue={`${leadsEmAprovacao.length} leads em fluxo`}
+          icon={<DollarSign className="text-[#8B0000]" />} 
+          trend="Soma de leads ativos" 
         />
         <MetricCard 
           label="Imóveis Ativos" 
@@ -73,7 +73,7 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, clients, properties }) => 
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold text-gray-800 mb-6 uppercase tracking-wider text-xs">Distribuição por Fase</h3>
+          <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Distribuição por Fase</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={phaseStats} layout="vertical">
@@ -91,7 +91,7 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, clients, properties }) => 
         </div>
 
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold text-gray-800 mb-6 uppercase tracking-wider text-xs">Ocupação do Funil</h3>
+          <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Volume do Pipeline</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>

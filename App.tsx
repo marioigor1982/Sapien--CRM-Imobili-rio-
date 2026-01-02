@@ -105,9 +105,9 @@ const App: React.FC = () => {
         propertyId: leadData.propertyId || '',
         bankId: leadData.bankId || '',
         constructionCompanyId: leadData.constructionCompanyId || '',
-        currentPhase: LeadPhase.ABERTURA_CREDITO,
+        currentPhase: leadData.currentPhase || LeadPhase.ABERTURA_CREDITO,
         createdAt: leadData.createdAt || new Date().toISOString(),
-        history: [{ phase: LeadPhase.ABERTURA_CREDITO, date: leadData.createdAt || new Date().toISOString() }],
+        history: [{ phase: leadData.currentPhase || LeadPhase.ABERTURA_CREDITO, date: leadData.createdAt || new Date().toISOString() }],
         ...leadData
       };
       setLeads(prev => [...prev, newLead]);
@@ -255,14 +255,14 @@ const LeadModal: React.FC<LeadModalProps> = ({ lead, onClose, onSave, clients, b
               <label className="text-xs font-bold text-gray-500 uppercase">Data de Abertura</label>
               <input 
                 type="date" 
-                className="w-full border border-gray-700 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-[#1F1F1F] text-white" 
+                className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900" 
                 value={data.createdAt} 
                 onChange={e => setData({...data, createdAt: e.target.value})}
               />
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold text-gray-500 uppercase">Cliente</label>
-              <select className="w-full border border-gray-700 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-[#1F1F1F] text-white" value={data.clientId} onChange={e => setData({...data, clientId: e.target.value})}>
+              <select className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900" value={data.clientId} onChange={e => setData({...data, clientId: e.target.value})}>
                 <option value="">Selecione...</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
@@ -271,7 +271,7 @@ const LeadModal: React.FC<LeadModalProps> = ({ lead, onClose, onSave, clients, b
           
           <div className="space-y-1">
             <label className="text-xs font-bold text-gray-500 uppercase">Imóvel de Interesse</label>
-            <select className="w-full border border-gray-700 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-[#1F1F1F] text-white" value={data.propertyId} onChange={e => setData({...data, propertyId: e.target.value})}>
+            <select className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900" value={data.propertyId} onChange={e => setData({...data, propertyId: e.target.value})}>
               <option value="">Selecione um imóvel...</option>
               {properties.map(p => <option key={p.id} value={p.id}>{p.title} - R$ {p.value.toLocaleString()}</option>)}
             </select>
@@ -279,14 +279,14 @@ const LeadModal: React.FC<LeadModalProps> = ({ lead, onClose, onSave, clients, b
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-xs font-bold text-gray-500 uppercase">Corretor Responsável</label>
-              <select className="w-full border border-gray-700 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-[#1F1F1F] text-white" value={data.brokerId} onChange={e => setData({...data, brokerId: e.target.value})}>
+              <select className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900" value={data.brokerId} onChange={e => setData({...data, brokerId: e.target.value})}>
                 <option value="">Selecione...</option>
                 {brokers.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold text-gray-500 uppercase">Banco Preferencial</label>
-              <select className="w-full border border-gray-700 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-[#1F1F1F] text-white" value={data.bankId} onChange={e => setData({...data, bankId: e.target.value})}>
+              <select className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900" value={data.bankId} onChange={e => setData({...data, bankId: e.target.value})}>
                 <option value="">Selecione...</option>
                 {banks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
@@ -294,7 +294,7 @@ const LeadModal: React.FC<LeadModalProps> = ({ lead, onClose, onSave, clients, b
           </div>
           <div className="space-y-1">
             <label className="text-xs font-bold text-gray-500 uppercase">Fase do Pipeline</label>
-            <select className="w-full border border-gray-700 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-[#1F1F1F] text-white" value={data.currentPhase} onChange={e => setData({...data, currentPhase: e.target.value as LeadPhase})}>
+            <select className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900" value={data.currentPhase} onChange={e => setData({...data, currentPhase: e.target.value as LeadPhase})}>
               {PHASES_ORDER.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
