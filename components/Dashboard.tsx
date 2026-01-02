@@ -15,13 +15,21 @@ interface DashboardProps {
   brokers: Broker[];
 }
 
+// Mapeamento de cores para manter consistência com LeadTable
+const PHASE_COLORS: Record<string, string> = {
+  [LeadPhase.ABERTURA_CREDITO]: '#3B82F6',   // Blue-500
+  [LeadPhase.APROVACAO_CREDITO]: '#22C55E',  // Green-500
+  [LeadPhase.VISITA_IMOVEL]: '#F97316',      // Orange-500
+  [LeadPhase.ENGENHARIA]: '#0EA5E9',         // Sky-500
+  [LeadPhase.EMISSAO_CONTRATO]: '#EAB308',   // Yellow-500
+  [LeadPhase.ASSINATURA_CONTRATO]: '#10B981' // Emerald-500
+};
+
 const Dashboard: React.FC<DashboardProps> = ({ leads, clients, properties, brokers }) => {
   const phaseStats = Object.values(LeadPhase).map(phase => ({
     name: phase,
     count: leads.filter(l => l.currentPhase === phase).length
   }));
-
-  const COLORS = ['#8B0000', '#C0C0C0', '#4A4A4A', '#D1D5DB', '#6B7280', '#1F1F1F'];
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('pt-BR', { 
@@ -44,7 +52,7 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, clients, properties, broke
     return acc + (Number(prop?.value) || 0);
   }, 0);
 
-  // 3. NOVO: Total de comissões (Abertura até Emissão)
+  // 3. Total de comissões (Abertura até Emissão)
   const commissionPhases = [
     LeadPhase.ABERTURA_CREDITO,
     LeadPhase.APROVACAO_CREDITO,
@@ -63,10 +71,10 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, clients, properties, broke
       return acc;
     }, 0);
 
-  // 4. NOVO: Contagem de Visita ao Imóvel
+  // 4. Contagem de Visita ao Imóvel
   const visitasCount = leads.filter(l => l.currentPhase === LeadPhase.VISITA_IMOVEL).length;
 
-  // 5. NOVO: Contagem de Engenharia
+  // 5. Contagem de Engenharia
   const engenhariaCount = leads.filter(l => l.currentPhase === LeadPhase.ENGENHARIA).length;
 
   const handleInit = async () => {
@@ -88,7 +96,7 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, clients, properties, broke
         </button>
       </div>
 
-      {/* Grid de Métricas (Agora com 8 cards) */}
+      {/* Grid de Métricas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard 
           label="Total de Leads" 
@@ -117,7 +125,6 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, clients, properties, broke
           trend="Estoque" 
         />
 
-        {/* Novos 4 Cards */}
         <MetricCard 
           label="Total Comissões" 
           value={formatCurrency(totalCommissions)} 
@@ -148,6 +155,7 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, clients, properties, broke
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Gráfico de Barras com Cores Sincronizadas */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Distribuição por Fase</h3>
           <div className="h-64">
@@ -160,12 +168,17 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, clients, properties, broke
                   cursor={{fill: '#f4f6f8'}} 
                   contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} 
                 />
-                <Bar dataKey="count" fill="#8B0000" radius={[0, 4, 4, 0]} barSize={20} />
+                <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={20}>
+                  {phaseStats.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={PHASE_COLORS[entry.name] || '#8B0000'} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
+        {/* Gráfico de Pizza com Cores Sincronizadas */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Volume do Pipeline</h3>
           <div className="h-64">
@@ -181,11 +194,13 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, clients, properties, broke
                   dataKey="count"
                 >
                   {phaseStats.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell key={`cell-${index}`} fill={PHASE_COLORS[entry.name] || '#C0C0C0'} />
                   ))}
                 </Pie>
-                <Tooltip />
-                <Legend layout="horizontal" align="center" verticalAlign="bottom" iconType="circle" />
+                <Tooltip 
+                  contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} 
+                />
+                <Legend layout="horizontal" align="center" verticalAlign="bottom" iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '20px' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
