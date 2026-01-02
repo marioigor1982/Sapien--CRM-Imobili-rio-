@@ -1,18 +1,17 @@
 
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Plus, Edit2, Trash2, Search, X, Image as ImageIcon, 
-  Eye, MapPin, Landmark, Briefcase, CheckCircle, Clock
+  Eye, Landmark
 } from 'lucide-react';
 import { LeadPhase } from '../types';
 
 interface GenericCrudProps {
   title: string;
   data: any[];
-  setData: (data: any[]) => void; // Standardized for Firestore sync
   type: 'client' | 'broker' | 'property' | 'bank' | 'company';
-  onSave?: (data: any) => Promise<void>;
-  onDelete?: (id: string) => Promise<void>;
+  onSave?: (data: any) => Promise<any>;
+  onDelete?: (id: string) => Promise<any>;
 }
 
 const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, onDelete }) => {
@@ -22,19 +21,10 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
   const [editingItem, setEditingItem] = useState<any>(null);
   const [viewingItem, setViewingItem] = useState<any>(null);
   const [formData, setFormData] = useState<any>({});
-
-  const leads = useMemo(() => {
-    const saved = localStorage.getItem('sapien_leads');
-    return saved ? JSON.parse(saved) : [];
-  }, [isViewModalOpen, isModalOpen]);
-
-  const properties = useMemo(() => {
-    const saved = localStorage.getItem('sapien_properties');
-    return saved ? JSON.parse(saved) : [];
-  }, [isViewModalOpen, isModalOpen]);
+  const [loading, setLoading] = useState(false);
 
   const handleDelete = async (id: string) => {
-    if (confirm('Tem certeza que deseja excluir este registro?')) {
+    if (confirm('Deseja realmente excluir este registro permanentemente do Firestore?')) {
       if (onDelete) await onDelete(id);
       if (viewingItem?.id === id) setIsViewModalOpen(false);
     }
@@ -63,14 +53,21 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (onSave) {
-      await onSave(formData);
-      setIsModalOpen(false);
+    setLoading(true);
+    try {
+      if (onSave) {
+        await onSave(formData);
+        setIsModalOpen(false);
+      }
+    } catch (err) {
+      alert("Erro ao salvar no Firestore. Verifique as regras de segurança.");
+    } finally {
+      setLoading(false);
     }
   };
 
   const filteredData = data.filter(item => {
-    const values = Object.values(item).join(' ').toLowerCase();
+    const values = Object.values(item).filter(v => typeof v === 'string' || typeof v === 'number').join(' ').toLowerCase();
     return values.includes(searchTerm.toLowerCase());
   });
 
@@ -197,7 +194,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
           <div className="grid grid-cols-2 gap-4">
              <div className="space-y-1">
               <label className="text-xs font-bold text-gray-700 uppercase">Tipo</label>
-              <select className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
+              <select className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900 font-bold" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
                 <option value="Casa">Casa</option>
                 <option value="Apartamento">Apartamento</option>
                 <option value="Terreno">Terreno</option>
@@ -223,71 +220,14 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
     }
   };
 
-  const renderViewDetails = () => {
-    if (!viewingItem) return null;
-
-    if (type === 'broker') {
-      const brokerLeads = leads.filter((l: any) => l.brokerId === viewingItem.id);
-      const recebidosLeads = brokerLeads.filter((l: any) => l.currentPhase === LeadPhase.ASSINATURA_CONTRATO);
-      const aReceberLeads = brokerLeads.filter((l: any) => 
-        l.currentPhase !== LeadPhase.ABERTURA_CREDITO && l.currentPhase !== LeadPhase.ASSINATURA_CONTRATO
-      );
-
-      const calculateComission = (leadsList: any[]) => leadsList.reduce((acc, l) => {
-        const prop = properties.find((p: any) => p.id === l.propertyId);
-        return acc + ((prop?.value || 0) * (viewingItem.commissionRate / 100));
-      }, 0);
-
-      const valAReceber = calculateComission(aReceberLeads);
-      const valRecebidos = calculateComission(recebidosLeads);
-
-      return (
-        <div className="space-y-6">
-          <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-[#8B0000] rounded-full flex items-center justify-center text-white text-xl font-bold">
-              {viewingItem.name.substring(0,2).toUpperCase()}
-            </div>
-            <div>
-              <h4 className="text-2xl font-black text-gray-900">{viewingItem.name}</h4>
-              <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">CRECI: {viewingItem.creci} • {viewingItem.commissionRate}% Com.</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-green-50 p-4 rounded-2xl border border-green-100">
-              <span className="text-[10px] font-black uppercase tracking-widest text-green-600 block mb-1">Recebidos</span>
-              <p className="text-xl font-black text-green-900">{formatCurrency(valRecebidos)}</p>
-            </div>
-            <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
-              <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 block mb-1">A Receber</span>
-              <p className="text-xl font-black text-blue-900">{formatCurrency(valAReceber)}</p>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-        {Object.entries(viewingItem).map(([key, value]) => (
-          key !== 'id' && key !== 'photos' && key !== 'logo' && (
-            <div key={key} className="border-b border-gray-50 pb-2">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{key}</label>
-              <p className="text-gray-900 font-medium">{String(value)}</p>
-            </div>
-          )
-        ))}
-      </div>
-    );
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-          <input type="text" placeholder={`Buscar...`} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B0000] w-full md:w-80 bg-white text-gray-900" />
+          <input type="text" placeholder={`Buscar ${title}...`} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B0000] w-full md:w-80 bg-white text-gray-900 font-bold placeholder:font-normal" />
         </div>
-        <button onClick={() => handleOpenModal()} className="bg-[#8B0000] text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2 font-bold shadow-md hover:bg-[#6b0000] transition-colors"><Plus size={18} /><span>Novo Cadastro</span></button>
+        <button onClick={() => handleOpenModal()} className="bg-[#8B0000] text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2 font-black text-xs uppercase tracking-widest shadow-lg hover:bg-[#6b0000] transition-all"><Plus size={18} /><span>Novo {title.slice(0, -1)}</span></button>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -296,9 +236,9 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
                 {getTableHeaders().map((h, idx) => (
-                  <th key={idx} className="px-6 py-4 text-xs font-bold text-gray-700 uppercase tracking-wider">{h}</th>
+                  <th key={idx} className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">{h}</th>
                 ))}
-                <th className="px-6 py-4 text-xs font-bold text-gray-700 uppercase tracking-wider text-right">Ações</th>
+                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -317,20 +257,27 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
             </tbody>
           </table>
         </div>
+        {filteredData.length === 0 && (
+          <div className="py-20 text-center">
+            <p className="text-gray-300 font-black uppercase tracking-[0.2em] text-[10px]">Nenhum registro encontrado no Firestore</p>
+          </div>
+        )}
       </div>
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg my-8 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg my-8 overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="bg-[#8B0000] px-6 py-4 flex items-center justify-between text-white sticky top-0 z-10">
-              <h3 className="font-bold uppercase tracking-widest text-sm">{editingItem ? 'Editar' : 'Cadastrar'} {title}</h3>
+              <h3 className="font-bold uppercase tracking-widest text-sm">{editingItem ? 'Editar' : 'Cadastrar'} {title.slice(0,-1)} Cloud</h3>
               <button onClick={() => setIsModalOpen(false)}><X size={20} /></button>
             </div>
             <form onSubmit={handleFormSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
               {renderFormFields()}
               <div className="flex justify-end space-x-3 mt-8 pt-4 border-t border-gray-100">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2 text-gray-500 font-bold">Cancelar</button>
-                <button type="submit" className="px-6 py-2 bg-[#8B0000] text-white rounded-lg font-bold">Salvar</button>
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2 text-gray-400 font-bold uppercase text-[10px] tracking-widest">Cancelar</button>
+                <button type="submit" disabled={loading} className="px-6 py-2 bg-[#8B0000] text-white rounded-lg font-black uppercase text-[10px] tracking-widest shadow-md disabled:opacity-50">
+                  {loading ? 'Salvando...' : 'Salvar no Firestore'}
+                </button>
               </div>
             </form>
           </div>
@@ -340,11 +287,26 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
       {isViewModalOpen && viewingItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl my-8 overflow-hidden animate-in fade-in zoom-in duration-300">
-             <div className="p-6">
-                <div className="flex justify-end mb-2">
+             <div className="p-8">
+                <div className="flex justify-between items-center mb-6">
+                   <h4 className="text-[10px] font-black text-[#8B0000] uppercase tracking-[0.3em]">Detalhes do Registro Cloud</h4>
                    <button onClick={() => setIsViewModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X size={24} className="text-gray-400" /></button>
                 </div>
-                {renderViewDetails()}
+                <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-4">
+                  {Object.entries(viewingItem).map(([key, value]) => (
+                    key !== 'id' && key !== 'photos' && key !== 'logo' && key !== 'createdAt' && key !== 'updatedAt' && (
+                      <div key={key} className="border-b border-gray-50 pb-2">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{key}</label>
+                        <p className="text-gray-900 font-bold text-sm">{String(value)}</p>
+                      </div>
+                    )
+                  ))}
+                </div>
+                <div className="mt-8 flex justify-end">
+                   <button onClick={() => { setIsViewModalOpen(false); handleOpenModal(viewingItem); }} className="text-xs font-black uppercase tracking-widest text-[#8B0000] flex items-center hover:underline">
+                      <Edit2 size={14} className="mr-2" /> Editar Registro
+                   </button>
+                </div>
              </div>
           </div>
         </div>
@@ -355,14 +317,15 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, type, onSave, on
 
 const InputField: React.FC<{ label: string; value: any; onChange: (v: string) => void; type?: string; step?: string }> = ({ label, value, onChange, type = "text", step }) => (
   <div className="space-y-1">
-    <label className="text-xs font-bold text-gray-700 uppercase">{label}</label>
+    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{label}</label>
     <input 
       type={type} 
       step={step} 
-      placeholder="Digite aqui..."
+      placeholder={`Digite ${label.toLowerCase()}...`}
       value={value || ''} 
       onChange={e => onChange(e.target.value)} 
-      className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900 placeholder:text-gray-400" 
+      className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900 font-bold placeholder:font-normal placeholder:text-gray-300" 
+      required={type !== 'file'}
     />
   </div>
 );
