@@ -5,7 +5,8 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
 } from 'recharts';
-import { TrendingUp, Activity, CreditCard, DollarSign, Home } from 'lucide-react';
+import { TrendingUp, Activity, CreditCard, DollarSign, Home, Database } from 'lucide-react';
+import { initDatabase } from '../initDatabase';
 
 interface DashboardProps {
   leads: Lead[];
@@ -42,8 +43,25 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, clients, properties }) => 
     return acc + (Number(prop?.value) || 0);
   }, 0);
 
+  const handleInit = async () => {
+    if (confirm("Deseja inicializar o banco de dados com dados de exemplo? Isso criará as coleções no Firestore.")) {
+      await initDatabase();
+    }
+  };
+
   return (
     <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Visão Geral de Performance</h2>
+        <button 
+          onClick={handleInit}
+          className="flex items-center space-x-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-md transition-colors text-[10px] font-black uppercase tracking-widest border border-gray-200"
+        >
+          <Database size={12} />
+          <span>Inicializar Banco</span>
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard 
           label="Total de Leads" 
