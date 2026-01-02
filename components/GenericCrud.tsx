@@ -99,7 +99,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
         <>
           <td className="px-6 py-4 font-bold text-gray-900 whitespace-nowrap hover:text-[#8B0000] cursor-pointer" onClick={() => handleOpenViewModal(item)}>{item.name}</td>
           <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{item.taxId}</td>
-          <td className="px-6 py-4 text-gray-500">{item.phone}</td>
+          <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{item.phone}</td>
           <td className="px-6 py-4 text-gray-500">{item.email}</td>
           <td className="px-6 py-4 text-gray-900 font-bold whitespace-nowrap">{formatCurrency(Number(item.income))}</td>
           <td className="px-6 py-4">
@@ -114,7 +114,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
           <td className="px-6 py-4 font-bold text-gray-900 whitespace-nowrap hover:text-[#8B0000] cursor-pointer" onClick={() => handleOpenViewModal(item)}>{item.name}</td>
           <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{item.creci}</td>
           <td className="px-6 py-4 text-gray-900 font-bold text-center whitespace-nowrap">{item.commissionRate}%</td>
-          <td className="px-6 py-4 text-gray-500">{item.phone}</td>
+          <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{item.phone}</td>
           <td className="px-6 py-4 text-gray-500">{item.email}</td>
         </>
       );
@@ -142,7 +142,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
           </td>
           <td className="px-6 py-4 font-bold text-gray-900 whitespace-nowrap hover:text-[#8B0000] cursor-pointer" onClick={() => handleOpenViewModal(item)}>{item.name}</td>
           <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{item.agency}</td>
-          <td className="px-6 py-4 text-gray-500">{item.phone}</td>
+          <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{item.phone}</td>
           <td className="px-6 py-4 text-gray-900 font-bold whitespace-nowrap">{item.avgRate}%</td>
         </>
       );
@@ -151,7 +151,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
           <td className="px-6 py-4 font-bold text-gray-900 whitespace-nowrap hover:text-[#8B0000] cursor-pointer" onClick={() => handleOpenViewModal(item)}>{item.name}</td>
           <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{item.cnpj}</td>
           <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{item.city} / {item.state}</td>
-          <td className="px-6 py-4 text-gray-500">{item.phone}</td>
+          <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{item.phone}</td>
         </>
       );
       default: return null;
@@ -202,7 +202,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
           <InputField label="Título do Imóvel" value={formData.title} onChange={v => setFormData({...formData, title: v})} />
           <div className="grid grid-cols-2 gap-4">
              <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-500 uppercase">Tipo</label>
+              <label className="text-xs font-bold text-gray-700 uppercase">Tipo</label>
               <select className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
                 <option value="Casa">Casa</option>
                 <option value="Apartamento">Apartamento</option>
@@ -235,12 +235,10 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
     if (type === 'broker') {
       const brokerLeads = leads.filter((l: any) => l.brokerId === viewingItem.id);
       
-      // Recebidos = Todos que avançaram a fase de "Assinatura de Contrato"
       const recebidosLeads = brokerLeads.filter((l: any) => 
         l.currentPhase === LeadPhase.ASSINATURA_CONTRATO
       );
 
-      // A receber = Leads do corretor que estão de "Aprovação de Crédito" até "Emissão do Contrato"
       const aReceberLeads = brokerLeads.filter((l: any) => 
         l.currentPhase === LeadPhase.APROVACAO_CREDITO || 
         l.currentPhase === LeadPhase.VISITA_IMOVEL ||
@@ -343,16 +341,16 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
                 {getTableHeaders().map((h, idx) => (
-                  <th key={idx} className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">{h}</th>
+                  <th key={idx} className="px-6 py-4 text-xs font-bold text-gray-700 uppercase tracking-wider">{h}</th>
                 ))}
-                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Ações</th>
+                <th className="px-6 py-4 text-xs font-bold text-gray-700 uppercase tracking-wider text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {filteredData.map(item => (
                 <tr key={item.id} className="hover:bg-gray-50/50 transition-colors text-sm group">
                   {renderRow(item)}
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-4 text-right whitespace-nowrap">
                     <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => handleOpenViewModal(item)} className="p-1.5 text-gray-400 hover:text-[#8B0000] hover:bg-red-50 rounded transition-all"><Eye size={16} /></button>
                       <button onClick={() => handleOpenModal(item)} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all"><Edit2 size={16} /></button>
@@ -407,7 +405,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({ title, data, setData, type, c
 
 const InputField: React.FC<{ label: string; value: any; onChange: (v: string) => void; type?: string; step?: string }> = ({ label, value, onChange, type = "text", step }) => (
   <div className="space-y-1">
-    <label className="text-xs font-bold text-gray-500 uppercase">{label}</label>
+    <label className="text-xs font-bold text-gray-700 uppercase">{label}</label>
     <input 
       type={type} 
       step={step} 

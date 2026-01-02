@@ -21,23 +21,28 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, clients, properties }) => 
 
   const COLORS = ['#8B0000', '#C0C0C0', '#4A4A4A', '#D1D5DB', '#6B7280', '#1F1F1F'];
 
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat('pt-BR', { 
+      style: 'currency', 
+      currency: 'BRL',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(val);
+  };
+
   // SOMA: Leads apenas na fase de Abertura de Crédito
   const leadsInAbertura = leads.filter(l => l.currentPhase === LeadPhase.ABERTURA_CREDITO);
   const totalValueAbertura = leadsInAbertura.reduce((acc, lead) => {
     const prop = properties.find(p => p.id === lead.propertyId);
-    return acc + (prop?.value || 0);
+    return acc + Number(prop?.value || 0);
   }, 0);
 
-  // SOMA: Todos os leads APÓS a fase de Abertura de Crédito
+  // SOMA: Todos os leads APÓS a fase de Abertura de Crédito (Aprovação em diante)
   const leadsEmAprovacao = leads.filter(l => l.currentPhase !== LeadPhase.ABERTURA_CREDITO);
   const totalValueEmAprovacao = leadsEmAprovacao.reduce((acc, lead) => {
     const prop = properties.find(p => p.id === lead.propertyId);
-    return acc + (prop?.value || 0);
+    return acc + Number(prop?.value || 0);
   }, 0);
-
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
-  };
 
   return (
     <div className="space-y-6">
@@ -54,14 +59,14 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, clients, properties }) => 
           value={formatCurrency(totalValueAbertura)} 
           subValue={`${leadsInAbertura.length} leads em Abertura`}
           icon={<CreditCard className="text-gray-400" />} 
-          trend="Subtrai ao avançar" 
+          trend="Fase Inicial" 
         />
         <MetricCard 
           label="Valor em Aprovação" 
           value={formatCurrency(totalValueEmAprovacao)} 
-          subValue={`${leadsEmAprovacao.length} leads em fluxo`}
+          subValue={`${leadsEmAprovacao.length} leads avançados`}
           icon={<DollarSign className="text-[#8B0000]" />} 
-          trend="Soma de leads ativos" 
+          trend="Somatório Total" 
         />
         <MetricCard 
           label="Imóveis Ativos" 
