@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Lead, LeadPhase, PHASES_ORDER, Client, Broker, Property } from '../types';
-import { MoreHorizontal, User, MapPin, Plus, GripVertical, Eye, Trash2 } from 'lucide-react';
+import { MoreHorizontal, User, MapPin, Plus, GripVertical, Eye, Trash2, Clock } from 'lucide-react';
 
 interface KanbanBoardProps {
   leads: Lead[];
@@ -20,6 +20,18 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
 }) => {
   const [draggedLeadId, setDraggedLeadId] = useState<string | null>(null);
   const [activeDropZone, setActiveDropZone] = useState<LeadPhase | null>(null);
+
+  const calculateProcessDays = (lead: Lead) => {
+    const startEntry = lead.history?.find(h => h.phase === LeadPhase.ABERTURA_CREDITO);
+    const startDate = startEntry ? new Date(startEntry.date) : new Date(lead.createdAt);
+    
+    const endEntry = lead.history?.find(h => h.phase === LeadPhase.ASSINATURA_CONTRATO);
+    const endDate = endEntry ? new Date(endEntry.date) : new Date();
+    
+    const diffTime = endDate.getTime() - startDate.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays < 0 ? 0 : diffDays;
+  };
 
   const handleDragStart = (e: React.DragEvent, leadId: string) => {
     setDraggedLeadId(leadId);
@@ -120,6 +132,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                   const client = clients.find(c => c.id === lead.clientId);
                   const property = properties.find(p => p.id === lead.propertyId);
                   const broker = brokers.find(b => b.id === lead.brokerId);
+                  const daysInProcess = calculateProcessDays(lead);
+                  const isCompleted = lead.currentPhase === LeadPhase.ASSINATURA_CONTRATO;
 
                   return (
                     <div 
@@ -168,9 +182,15 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                       </div>
 
                       <div className="pt-2 border-t border-gray-100 flex items-center justify-between pl-2">
-                        <span className="text-[11px] font-bold text-[#8B0000]">
-                          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(property?.value || 0)}
-                        </span>
+                        <div className="flex flex-col">
+                          <span className="text-[11px] font-bold text-[#8B0000]">
+                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(property?.value || 0)}
+                          </span>
+                          <div className={`flex items-center mt-1 text-[9px] font-black uppercase tracking-tighter ${isCompleted ? 'text-green-600' : 'text-gray-400'}`}>
+                            <Clock size={10} className="mr-1" />
+                            {isCompleted ? `Ciclo: ${daysInProcess} dias` : `${daysInProcess} dias em processo`}
+                          </div>
+                        </div>
                         <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#8B0000]/10 to-[#8B0000]/20 border border-white text-[8px] flex items-center justify-center font-bold text-[#8B0000] shadow-sm uppercase">
                           {client?.name?.substring(0, 2) || 'LE'}
                         </div>

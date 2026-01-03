@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Lead, Client, Broker, Property, Bank, ConstructionCompany, LeadPhase, PHASES_ORDER } from '../types';
-import { Eye, Edit2, Trash2, ArrowUpRight, Plus } from 'lucide-react';
+import { Eye, Edit2, Trash2, ArrowUpRight, Plus, Clock } from 'lucide-react';
 
 interface LeadTableProps {
   leads: Lead[];
@@ -39,6 +39,18 @@ const LeadTable: React.FC<LeadTableProps> = ({
     }
   };
 
+  const calculateProcessDays = (lead: Lead) => {
+    const startEntry = lead.history?.find(h => h.phase === LeadPhase.ABERTURA_CREDITO);
+    const startDate = startEntry ? new Date(startEntry.date) : new Date(lead.createdAt);
+    
+    const endEntry = lead.history?.find(h => h.phase === LeadPhase.ASSINATURA_CONTRATO);
+    const endDate = endEntry ? new Date(endEntry.date) : new Date();
+    
+    const diffTime = endDate.getTime() - startDate.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays < 0 ? 0 : diffDays;
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -58,7 +70,7 @@ const LeadTable: React.FC<LeadTableProps> = ({
               <tr className="bg-gray-50 border-b border-gray-100">
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Cliente</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Fase Atual</th>
-                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Progresso</th>
+                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Progresso / Dias</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Imóvel</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Valor</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Corretor</th>
@@ -73,6 +85,8 @@ const LeadTable: React.FC<LeadTableProps> = ({
                 
                 const phaseIndex = PHASES_ORDER.indexOf(lead.currentPhase);
                 const progress = Math.round(((phaseIndex + 1) / PHASES_ORDER.length) * 100);
+                const daysInProcess = calculateProcessDays(lead);
+                const isCompleted = lead.currentPhase === LeadPhase.ASSINATURA_CONTRATO;
 
                 return (
                   <tr key={lead.id} className="hover:bg-gray-50/50 transition-colors group">
@@ -88,13 +102,17 @@ const LeadTable: React.FC<LeadTableProps> = ({
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="w-32">
+                      <div className="w-40">
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-[10px] font-bold text-gray-500">{progress}%</span>
+                          <span className={`text-[9px] font-black uppercase flex items-center ${isCompleted ? 'text-green-600' : 'text-[#8B0000]'}`}>
+                            <Clock size={10} className="mr-1" />
+                            {daysInProcess} {daysInProcess === 1 ? 'dia' : 'dias'}
+                          </span>
                         </div>
                         <div className="w-full h-1.5 bg-gray-100 rounded-full">
                           <div 
-                            className="h-full bg-gradient-to-r from-[#8B0000] to-red-600 rounded-full transition-all duration-500"
+                            className={`h-full rounded-full transition-all duration-500 ${isCompleted ? 'bg-green-500' : 'bg-gradient-to-r from-[#8B0000] to-red-600'}`}
                             style={{ width: `${progress}%` }}
                           />
                         </div>

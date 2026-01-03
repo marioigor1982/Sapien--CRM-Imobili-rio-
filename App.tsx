@@ -229,11 +229,25 @@ const LeadDetailsModal: React.FC<any> = ({ lead, onClose, onEdit, onDelete, clie
   const broker = brokers.find((b: any) => b.id === lead.brokerId);
   const bank = banks.find((b: any) => b.id === lead.bankId);
 
+  const calculateProcessDays = (lead: Lead) => {
+    const startEntry = lead.history?.find(h => h.phase === LeadPhase.ABERTURA_CREDITO);
+    const startDate = startEntry ? new Date(startEntry.date) : new Date(lead.createdAt);
+    
+    const endEntry = lead.history?.find(h => h.phase === LeadPhase.ASSINATURA_CONTRATO);
+    const endDate = endEntry ? new Date(endEntry.date) : new Date();
+    
+    const diffTime = endDate.getTime() - startDate.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays < 0 ? 0 : diffDays;
+  };
+
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
   };
 
   const commissionValue = broker && property ? (Number(property.value) * Number(broker.commissionRate)) / 100 : 0;
+  const daysInProcess = calculateProcessDays(lead);
+  const isCompleted = lead.currentPhase === LeadPhase.ASSINATURA_CONTRATO;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md overflow-y-auto">
@@ -241,7 +255,12 @@ const LeadDetailsModal: React.FC<any> = ({ lead, onClose, onEdit, onDelete, clie
         <div className="p-8">
           <div className="flex justify-between items-start mb-6">
             <div>
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#8B0000] bg-red-50 px-2 py-1 rounded">Lead Detail (Cloud)</span>
+              <div className="flex items-center space-x-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#8B0000] bg-red-50 px-2 py-1 rounded">Lead Detail (Cloud)</span>
+                <span className={`text-[10px] font-black uppercase tracking-[0.3em] px-2 py-1 rounded ${isCompleted ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'}`}>
+                  {isCompleted ? `Ciclo Final: ${daysInProcess} dias` : `Em Processo: ${daysInProcess} dias`}
+                </span>
+              </div>
               <h2 className="text-3xl font-black text-gray-900 mt-2">{client?.name || 'Cliente'}</h2>
             </div>
             <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 transition-colors"><X size={24} /></button>
