@@ -18,7 +18,6 @@ import {
   clientService, brokerService, propertyService, 
   bankService, companyService, leadService 
 } from './dataService';
-// Added missing Database icon import
 import { X, User, Home, Landmark, Briefcase, Calendar, Clock, Edit2, Trash2, Image as ImageIcon, DollarSign, Building2, Plus, Database } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -216,58 +215,60 @@ const LeadModal: React.FC<any> = ({ lead, onClose, onSave, clients, brokers, pro
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-xl overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="bg-[#8B0000] px-8 py-6 flex items-center justify-between text-white">
+      <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="bg-[#8B0000] px-8 py-6 flex items-center justify-between text-white shrink-0">
           <div>
             <h3 className="font-black uppercase tracking-widest text-sm">{lead ? 'Editar Lead' : 'Novo Lead'}</h3>
             <p className="text-[10px] font-bold text-red-200 uppercase tracking-widest mt-0.5">Sincronização Cloud Ativa</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={24} /></button>
         </div>
-        <form onSubmit={(e) => { e.preventDefault(); onSave(data); }} className="p-8 space-y-6">
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Cliente Associado</label>
-            <div className="flex gap-2">
-              <select className="flex-1 border border-gray-200 rounded-xl p-3 text-sm bg-white text-gray-900 font-bold focus:ring-2 focus:ring-[#8B0000] outline-none" value={data.clientId} onChange={e => setData({...data, clientId: e.target.value})} required>
-                <option value="">Selecione o cliente...</option>
-                {clients.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-              <button type="button" onClick={() => setIsQuickAdding('client')} className="p-3 bg-gray-50 text-[#8B0000] rounded-xl border border-gray-100 hover:bg-red-50 transition-colors"><Plus size={20} /></button>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Imóvel de Interesse</label>
-            <div className="flex gap-2">
-              <select className="flex-1 border border-gray-200 rounded-xl p-3 text-sm bg-white text-gray-900 font-bold focus:ring-2 focus:ring-[#8B0000] outline-none" value={data.propertyId} onChange={e => setData({...data, propertyId: e.target.value})} required>
-                <option value="">Selecione o imóvel...</option>
-                {properties.map((p: any) => <option key={p.id} value={p.id}>{p.title}</option>)}
-              </select>
-              <button type="button" onClick={() => setIsQuickAdding('property')} className="p-3 bg-gray-50 text-[#8B0000] rounded-xl border border-gray-100 hover:bg-red-50 transition-colors"><Plus size={20} /></button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+        <div className="flex-1 overflow-y-auto p-8">
+          <form onSubmit={(e) => { e.preventDefault(); onSave(data); }} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Corretor Responsável</label>
-              <select className="w-full border border-gray-200 rounded-xl p-3 text-sm bg-white text-gray-900 font-bold focus:ring-2 focus:ring-[#8B0000] outline-none" value={data.brokerId} onChange={e => setData({...data, brokerId: e.target.value})}>
-                <option value="">Opcional...</option>
-                {brokers.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Cliente Associado</label>
+              <div className="flex gap-2">
+                <select className="flex-1 border border-gray-200 rounded-xl p-3 text-sm bg-white text-gray-900 font-bold focus:ring-2 focus:ring-[#8B0000] outline-none" value={data.clientId} onChange={e => setData({...data, clientId: e.target.value})} required>
+                  <option value="">Selecione o cliente...</option>
+                  {clients.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+                <button type="button" onClick={() => setIsQuickAdding('client')} className="p-3 bg-gray-50 text-[#8B0000] rounded-xl border border-gray-100 hover:bg-red-50 transition-colors"><Plus size={20} /></button>
+              </div>
             </div>
+
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Banco Financiador</label>
-              <select className="w-full border border-gray-200 rounded-xl p-3 text-sm bg-white text-gray-900 font-bold focus:ring-2 focus:ring-[#8B0000] outline-none" value={data.bankId} onChange={e => setData({...data, bankId: e.target.value})}>
-                <option value="">Opcional...</option>
-                {banks.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Imóvel de Interesse</label>
+              <div className="flex gap-2">
+                <select className="flex-1 border border-gray-200 rounded-xl p-3 text-sm bg-white text-gray-900 font-bold focus:ring-2 focus:ring-[#8B0000] outline-none" value={data.propertyId} onChange={e => setData({...data, propertyId: e.target.value})} required>
+                  <option value="">Selecione o imóvel...</option>
+                  {properties.map((p: any) => <option key={p.id} value={p.id}>{p.title}</option>)}
+                </select>
+                <button type="button" onClick={() => setIsQuickAdding('property')} className="p-3 bg-gray-50 text-[#8B0000] rounded-xl border border-gray-100 hover:bg-red-50 transition-colors"><Plus size={20} /></button>
+              </div>
             </div>
-          </div>
-          <div className="flex justify-end space-x-4 mt-10 pt-6 border-t border-gray-100">
-            <button type="button" onClick={onClose} className="px-6 py-3 text-gray-400 font-black uppercase text-[10px] tracking-widest">Cancelar</button>
-            <button type="submit" className="px-10 py-3 bg-[#8B0000] text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl hover:bg-[#6b0000] hover:scale-105 transition-all">Salvar Lead Cloud</button>
-          </div>
-        </form>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Corretor Responsável</label>
+                <select className="w-full border border-gray-200 rounded-xl p-3 text-sm bg-white text-gray-900 font-bold focus:ring-2 focus:ring-[#8B0000] outline-none" value={data.brokerId} onChange={e => setData({...data, brokerId: e.target.value})}>
+                  <option value="">Opcional...</option>
+                  {brokers.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Banco Financiador</label>
+                <select className="w-full border border-gray-200 rounded-xl p-3 text-sm bg-white text-gray-900 font-bold focus:ring-2 focus:ring-[#8B0000] outline-none" value={data.bankId} onChange={e => setData({...data, bankId: e.target.value})}>
+                  <option value="">Opcional...</option>
+                  {banks.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end space-x-4 mt-10 pt-6 border-t border-gray-100">
+              <button type="button" onClick={onClose} className="px-6 py-3 text-gray-400 font-black uppercase text-[10px] tracking-widest">Cancelar</button>
+              <button type="submit" className="px-10 py-3 bg-[#8B0000] text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl hover:bg-[#6b0000] hover:scale-105 transition-all">Salvar Lead Cloud</button>
+            </div>
+          </form>
+        </div>
       </div>
 
       {isQuickAdding && (
@@ -356,28 +357,27 @@ const LeadDetailsModal: React.FC<any> = ({ lead, onClose, onEdit, onDelete, clie
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md overflow-y-auto">
-      <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-4xl my-8 overflow-hidden animate-in fade-in zoom-in duration-300">
-        <div className="p-10">
-          <div className="flex justify-between items-start mb-10">
-            <div className="space-y-2">
-              <div className="flex items-center space-x-3">
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#8B0000] bg-red-50 px-3 py-1.5 rounded-full">Executive Lead Insight</span>
-                <span className={`text-[10px] font-black uppercase tracking-[0.3em] px-3 py-1.5 rounded-full ${isCompleted ? 'bg-green-50 text-green-600 border border-green-100' : 'bg-blue-50 text-blue-600 border border-blue-100'}`}>
-                  {isCompleted ? `Ciclo Concluído: ${daysInProcess} dias` : `Ciclo em Aberto: ${daysInProcess} dias`}
-                </span>
-              </div>
-              <h2 className="text-4xl font-black text-gray-900 tracking-tighter">{client?.name || 'Cliente Cloud'}</h2>
-              <div className="flex items-center space-x-2 text-gray-400 font-bold text-xs uppercase tracking-widest">
-                <Clock size={14} className="text-[#8B0000]" />
-                <span>Aberto em {new Date(lead.createdAt).toLocaleDateString()}</span>
-              </div>
+      <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-300">
+        <div className="p-10 pb-4 flex justify-between items-start shrink-0 bg-white sticky top-0 z-10">
+          <div className="space-y-2">
+            <div className="flex items-center space-x-3">
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#8B0000] bg-red-50 px-3 py-1.5 rounded-full">Executive Lead Insight</span>
+              <span className={`text-[10px] font-black uppercase tracking-[0.3em] px-3 py-1.5 rounded-full ${isCompleted ? 'bg-green-50 text-green-600 border border-green-100' : 'bg-blue-50 text-blue-600 border border-blue-100'}`}>
+                {isCompleted ? `Ciclo Concluído: ${daysInProcess} dias` : `Ciclo em Aberto: ${daysInProcess} dias`}
+              </span>
             </div>
-            <button onClick={onClose} className="p-3 hover:bg-gray-100 rounded-full text-gray-300 transition-all"><X size={32} /></button>
+            <h2 className="text-4xl font-black text-gray-900 tracking-tighter">{client?.name || 'Cliente Cloud'}</h2>
+            <div className="flex items-center space-x-2 text-gray-400 font-bold text-xs uppercase tracking-widest">
+              <Clock size={14} className="text-[#8B0000]" />
+              <span>Aberto em {new Date(lead.createdAt).toLocaleDateString()}</span>
+            </div>
           </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          <button onClick={onClose} className="p-3 hover:bg-gray-100 rounded-full text-gray-300 transition-all"><X size={32} /></button>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto p-10 pt-0">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mt-6">
             <div className="lg:col-span-7 space-y-8">
-              {/* Main Media & Value Section */}
               <div className="relative group">
                 <div className="w-full aspect-[16/10] rounded-[2rem] overflow-hidden bg-gray-100 shadow-2xl border border-gray-100">
                   {property?.photos?.[0] ? (
@@ -410,7 +410,6 @@ const LeadDetailsModal: React.FC<any> = ({ lead, onClose, onEdit, onDelete, clie
             </div>
 
             <div className="lg:col-span-5 flex flex-col space-y-6">
-              {/* Financial & Human Resources */}
               <div className="grid grid-cols-1 gap-4">
                 <div className="p-6 bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center space-x-3 mb-4">
@@ -451,7 +450,6 @@ const LeadDetailsModal: React.FC<any> = ({ lead, onClose, onEdit, onDelete, clie
                 </div>
               </div>
 
-              {/* History Timeline */}
               <div className="flex-1 bg-gray-50/50 p-8 rounded-[2.5rem] border border-gray-100">
                 <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-8 flex items-center">
                   <Clock size={16} className="mr-3 text-[#8B0000]" /> Histórico de Processamento
@@ -472,26 +470,26 @@ const LeadDetailsModal: React.FC<any> = ({ lead, onClose, onEdit, onDelete, clie
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="mt-16 pt-8 border-t border-gray-100 flex flex-wrap gap-4 justify-between items-center">
-            <div className="flex items-center space-x-3 text-[10px] font-black text-gray-300 uppercase tracking-widest">
-               <Database size={14} />
-               <span>Sincronizado via Sapien DB Engine</span>
-            </div>
-            <div className="flex gap-3">
-              <button 
-                onClick={onDelete} 
-                className="px-8 py-3.5 border border-red-100 text-red-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-50 transition-all"
-              >
-                Excluir Registro
-              </button>
-              <button 
-                onClick={onEdit} 
-                className="px-12 py-3.5 bg-[#8B0000] text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-2xl hover:bg-[#6b0000] hover:scale-105 transition-all flex items-center"
-              >
-                <Edit2 size={16} className="mr-3" /> Editar Lead Cloud
-              </button>
-            </div>
+        <div className="p-8 border-t border-gray-100 flex flex-wrap gap-4 justify-between items-center bg-white shrink-0">
+          <div className="flex items-center space-x-3 text-[10px] font-black text-gray-300 uppercase tracking-widest">
+             <Database size={14} />
+             <span>Sincronizado via Sapien DB Engine</span>
+          </div>
+          <div className="flex gap-3">
+            <button 
+              onClick={onDelete} 
+              className="px-8 py-3.5 border border-red-100 text-red-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-50 transition-all"
+            >
+              Excluir Registro
+            </button>
+            <button 
+              onClick={onEdit} 
+              className="px-12 py-3.5 bg-[#8B0000] text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-2xl hover:bg-[#6b0000] hover:scale-105 transition-all flex items-center"
+            >
+              <Edit2 size={16} className="mr-3" /> Editar Lead Cloud
+            </button>
           </div>
         </div>
       </div>

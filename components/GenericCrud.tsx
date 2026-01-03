@@ -513,23 +513,25 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-md overflow-y-auto">
-          <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-2xl my-8 overflow-hidden animate-in fade-in zoom-in duration-300">
-            <div className="bg-[#8B0000] px-10 py-8 flex items-center justify-between text-white sticky top-0 z-10">
+          <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col my-8 overflow-hidden animate-in fade-in zoom-in duration-300">
+            <div className="bg-[#8B0000] px-10 py-8 flex items-center justify-between text-white sticky top-0 z-10 shrink-0">
               <div>
                  <h3 className="font-black uppercase tracking-widest text-sm">{editingItem ? 'Editar' : 'Cadastrar'} {title.slice(0,-1)} Cloud</h3>
                  <p className="text-[10px] text-red-200 uppercase font-bold tracking-[0.2em] mt-1">Garantia de integridade Sapien Engine</p>
               </div>
               <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={28} /></button>
             </div>
-            <form onSubmit={handleFormSubmit} className="p-10 space-y-6 max-h-[75vh] overflow-y-auto scrollbar-hide">
-              {renderFormFields()}
-              <div className="flex justify-end space-x-4 mt-12 pt-8 border-t border-gray-100">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-8 py-3 text-gray-400 font-black uppercase text-[10px] tracking-widest">Cancelar Operação</button>
-                <button type="submit" disabled={loading} className="px-10 py-3 bg-[#8B0000] text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-2xl disabled:opacity-50 hover:scale-105 transition-all">
-                  {loading ? 'Processando DB...' : 'Salvar no Firestore'}
-                </button>
-              </div>
-            </form>
+            <div className="flex-1 overflow-y-auto p-10">
+              <form onSubmit={handleFormSubmit} className="space-y-6">
+                {renderFormFields()}
+                <div className="flex justify-end space-x-4 mt-12 pt-8 border-t border-gray-100">
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="px-8 py-3 text-gray-400 font-black uppercase text-[10px] tracking-widest">Cancelar Operação</button>
+                  <button type="submit" disabled={loading} className="px-10 py-3 bg-[#8B0000] text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-2xl disabled:opacity-50 hover:scale-105 transition-all">
+                    {loading ? 'Processando DB...' : 'Salvar no Firestore'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
@@ -545,16 +547,16 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
 
       {isViewModalOpen && viewingItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-lg overflow-y-auto">
-          <div className={`bg-white rounded-[3rem] shadow-2xl w-full ${type === 'broker' ? 'max-w-6xl' : 'max-w-3xl'} my-8 overflow-hidden animate-in fade-in zoom-in duration-400 relative`}>
-             <div className="p-12">
-                <div className="flex justify-between items-start mb-12">
-                   <div>
-                      <h4 className="text-[10px] font-black text-[#8B0000] uppercase tracking-[0.5em] mb-2">Relatório Executivo Sapien</h4>
-                      <h2 className="text-4xl font-black text-gray-900 tracking-tighter">{viewingItem.name || viewingItem.title}</h2>
-                   </div>
-                   <button onClick={() => setIsViewModalOpen(false)} className="p-3 hover:bg-gray-100 rounded-full transition-all text-gray-300"><X size={36} /></button>
+          <div className={`bg-white rounded-[3rem] shadow-2xl w-full ${type === 'broker' ? 'max-w-6xl' : 'max-w-3xl'} max-h-[90vh] flex flex-col my-8 overflow-hidden animate-in fade-in zoom-in duration-400 relative`}>
+             <div className="p-10 pb-4 flex justify-between items-start shrink-0 sticky top-0 bg-white z-10 border-b border-gray-50">
+                <div>
+                   <h4 className="text-[10px] font-black text-[#8B0000] uppercase tracking-[0.5em] mb-2">Relatório Executivo Sapien</h4>
+                   <h2 className="text-4xl font-black text-gray-900 tracking-tighter">{viewingItem.name || viewingItem.title}</h2>
                 </div>
-                
+                <button onClick={() => setIsViewModalOpen(false)} className="p-3 hover:bg-gray-100 rounded-full transition-all text-gray-300"><X size={36} /></button>
+             </div>
+             
+             <div className="flex-1 overflow-y-auto p-12 pt-6">
                 {type === 'property' ? (
                   <div className="space-y-12">
                     <div className="w-full aspect-[16/9] rounded-[3rem] overflow-hidden shadow-2xl border-4 border-white bg-gray-50">
@@ -714,7 +716,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
                     );
                   })()
                 ) : (
-                  <div className="grid grid-cols-2 gap-x-12 gap-y-6 max-h-[60vh] overflow-y-auto pr-6">
+                  <div className="grid grid-cols-2 gap-x-12 gap-y-6">
                     {Object.entries(viewingItem).map(([key, value]) => (
                       key !== 'id' && key !== 'photos' && key !== 'logo' && key !== 'createdAt' && key !== 'updatedAt' && value !== undefined && value !== '' && (
                         <div key={key} className="border-b border-gray-50 pb-4">
@@ -725,16 +727,16 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
                     ))}
                   </div>
                 )}
+             </div>
 
-                <div className="mt-16 flex justify-between items-center border-t border-gray-100 pt-10">
-                   <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">Auditoria Sapien Cloud Ativa</p>
-                   <button 
-                    onClick={() => { setIsViewModalOpen(false); handleOpenModal(viewingItem); }} 
-                    className="px-10 py-4 bg-[#1F1F1F] text-white rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest shadow-2xl hover:bg-black hover:scale-105 transition-all flex items-center"
-                   >
-                      <Edit2 size={16} className="mr-3" /> Alterar Dados do Registro
-                   </button>
-                </div>
+             <div className="mt-auto px-12 py-8 flex justify-between items-center border-t border-gray-100 bg-white shrink-0">
+                <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">Auditoria Sapien Cloud Ativa</p>
+                <button 
+                 onClick={() => { setIsViewModalOpen(false); handleOpenModal(viewingItem); }} 
+                 className="px-10 py-4 bg-[#1F1F1F] text-white rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest shadow-2xl hover:bg-black hover:scale-105 transition-all flex items-center"
+                >
+                   <Edit2 size={16} className="mr-3" /> Alterar Dados do Registro
+                </button>
              </div>
           </div>
         </div>
