@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { 
   Plus, Edit2, Trash2, Search, X, Image as ImageIcon, 
   Eye, Landmark, Upload, Link as LinkIcon, Building2,
-  Wallet, TrendingUp, Calendar, Filter, Briefcase, MapPin, User, ChevronRight
+  Wallet, TrendingUp, Calendar, Filter, Briefcase, MapPin, User, ChevronRight, CheckCircle2, AlertCircle
 } from 'lucide-react';
 import { LeadPhase, ConstructionCompany, Lead, Property, Broker, Client, Bank } from '../types';
 
@@ -55,7 +55,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
   const [brokerDateEnd, setBrokerDateEnd] = useState('');
 
   const handleDelete = async (id: string) => {
-    if (confirm('Deseja realmente excluir este registro permanentemente do Firestore?')) {
+    if (confirm(`Deseja realmente excluir este ${title.slice(0,-1).toLowerCase()} permanentemente?`)) {
       if (onDelete) await onDelete(id);
       if (viewingItem?.id === id) setIsViewModalOpen(false);
     }
@@ -89,7 +89,6 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
   const handleOpenViewModal = (item: any) => {
     setViewingItem(item);
     setIsViewModalOpen(true);
-    // Reset filters
     setBrokerDateStart('');
     setBrokerDateEnd('');
   };
@@ -112,7 +111,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
         setIsModalOpen(false);
       }
     } catch (err) {
-      alert("Erro ao salvar no Firestore. Verifique as regras de segurança.");
+      alert("Erro ao salvar no Firestore.");
     } finally {
       setLoading(false);
     }
@@ -127,7 +126,6 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
       else if (quickType === 'broker') res = await brokerService.create(quickData);
       else if (quickType === 'bank') res = await bankService.create(quickData);
       
-      // Select the new item in the main form
       if (res && res.id) {
         if (quickType === 'company') setFormData({...formData, constructionCompanyId: res.id});
         if (quickType === 'property') setFormData({...formData, propertyId: res.id});
@@ -171,7 +169,6 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
   const calculateBrokerStats = (brokerId: string) => {
     let brokerLeads = leads.filter(l => l.brokerId === brokerId);
     
-    // Date Filtering
     if (brokerDateStart) {
       brokerLeads = brokerLeads.filter(l => new Date(l.createdAt) >= new Date(brokerDateStart));
     }
@@ -313,30 +310,32 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
           </div>
           <InputField label="Renda (Mensal)" type="number" value={formData.income} onChange={v => setFormData({...formData, income: Number(v)})} />
           
-          <div className="border-t border-gray-100 pt-4 mt-4 space-y-4">
-            <h4 className="text-[10px] font-black text-[#8B0000] uppercase tracking-[0.3em]">Vínculos Preferenciais (Lead Direto)</h4>
-            <SelectField 
-              label="Imóvel" 
-              value={formData.propertyId} 
-              options={properties.map(p => ({id: p.id, label: p.title}))} 
-              onChange={v => setFormData({...formData, propertyId: v})}
-              onQuickAdd={() => setIsQuickAddOpen('property')}
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <SelectField 
-                label="Corretor" 
-                value={formData.brokerId} 
-                options={brokers.map(b => ({id: b.id, label: b.name}))} 
-                onChange={v => setFormData({...formData, brokerId: v})}
-                onQuickAdd={() => setIsQuickAddOpen('broker')}
+          <div className="border-t border-gray-100 pt-6 mt-6 space-y-6">
+            <h4 className="text-[10px] font-black text-[#8B0000] uppercase tracking-[0.4em]">Vínculos Preferenciais Cloud</h4>
+            <div className="grid grid-cols-1 gap-4">
+               <SelectField 
+                label="Imóvel de Interesse" 
+                value={formData.propertyId} 
+                options={properties.map(p => ({id: p.id, label: p.title}))} 
+                onChange={v => setFormData({...formData, propertyId: v})}
+                onQuickAdd={() => setIsQuickAddOpen('property')}
               />
-              <SelectField 
-                label="Banco" 
-                value={formData.bankId} 
-                options={banks.map(b => ({id: b.id, label: b.name}))} 
-                onChange={v => setFormData({...formData, bankId: v})}
-                onQuickAdd={() => setIsQuickAddOpen('bank')}
-              />
+              <div className="grid grid-cols-2 gap-4">
+                <SelectField 
+                  label="Corretor" 
+                  value={formData.brokerId} 
+                  options={brokers.map(b => ({id: b.id, label: b.name}))} 
+                  onChange={v => setFormData({...formData, brokerId: v})}
+                  onQuickAdd={() => setIsQuickAddOpen('broker')}
+                />
+                <SelectField 
+                  label="Banco" 
+                  value={formData.bankId} 
+                  options={banks.map(b => ({id: b.id, label: b.name}))} 
+                  onChange={v => setFormData({...formData, bankId: v})}
+                  onQuickAdd={() => setIsQuickAddOpen('bank')}
+                />
+              </div>
             </div>
           </div>
         </>
@@ -357,14 +356,14 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
         </>
       );
       case 'property': return (
-        <div className="space-y-6">
+        <div className="space-y-8">
           <div className="space-y-4">
-            <h4 className="text-[10px] font-black text-[#8B0000] uppercase tracking-[0.3em]">Informações Gerais</h4>
+            <h4 className="text-[10px] font-black text-[#8B0000] uppercase tracking-[0.4em]">Especificação Técnica</h4>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tipo de Imóvel</label>
                 <select 
-                  className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900 font-bold" 
+                  className="w-full border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900 font-bold" 
                   value={formData.type} 
                   onChange={e => setFormData({...formData, type: e.target.value})}
                 >
@@ -375,74 +374,67 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
             </div>
 
             <SelectField 
-              label="Construtora" 
+              label="Construtora / Incorporadora" 
               value={formData.constructionCompanyId} 
               options={companies.map(c => ({id: c.id, label: c.name}))} 
               onChange={v => setFormData({...formData, constructionCompanyId: v})}
               onQuickAdd={() => setIsQuickAddOpen('company')}
             />
+          </div>
+
+          <div className="space-y-4">
+            <h4 className="text-[10px] font-black text-[#8B0000] uppercase tracking-[0.4em]">Geolocalização</h4>
+            <InputField label="Endereço" value={formData.address} onChange={v => setFormData({...formData, address: v})} />
+            <div className="grid grid-cols-3 gap-3">
+              <InputField label="Bairro" value={formData.neighborhood} onChange={v => setFormData({...formData, neighborhood: v})} />
+              <InputField label="Cidade" value={formData.city} onChange={v => setFormData({...formData, city: v})} />
+              <InputField label="UF" value={formData.state} onChange={v => setFormData({...formData, state: v})} />
+            </div>
             
-            <div className="p-3 bg-gray-50 rounded-lg border border-dashed border-gray-200">
-               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1 italic">Descrição Gerada Automaticamente:</p>
+            <div className="p-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+               <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 italic">Título Gerado:</p>
                <p className="text-xs font-black text-[#8B0000]">
-                  {`${formData.type || ''} ${formData.neighborhood || ''} ${formData.city || ''} ${formData.state || ''}`.trim() || 'Preencha os campos de localização'}
+                  {`${formData.type || ''} ${formData.neighborhood || ''} ${formData.city || ''} ${formData.state || ''}`.trim() || 'Aguardando dados de localização...'}
                </p>
             </div>
           </div>
 
           <div className="space-y-4">
-            <h4 className="text-[10px] font-black text-[#8B0000] uppercase tracking-[0.3em]">Localização</h4>
-            <InputField label="Endereço Completo" value={formData.address} onChange={v => setFormData({...formData, address: v})} />
-            <div className="grid grid-cols-3 gap-3">
-              <InputField label="Bairro" value={formData.neighborhood} onChange={v => setFormData({...formData, neighborhood: v})} />
-              <InputField label="Cidade / Município" value={formData.city} onChange={v => setFormData({...formData, city: v})} />
-              <InputField label="UF" value={formData.state} onChange={v => setFormData({...formData, state: v})} />
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <h4 className="text-[10px] font-black text-[#8B0000] uppercase tracking-[0.3em]">Mídia e Fotos</h4>
+            <h4 className="text-[10px] font-black text-[#8B0000] uppercase tracking-[0.4em]">Mídia & Cloud Photos</h4>
             <div className="flex gap-2">
-              <div className="flex-1">
-                <div className="relative">
-                   <LinkIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                   <input 
-                    type="text" 
-                    placeholder="Cole a URL da imagem..."
-                    className="w-full border border-gray-200 rounded-lg pl-9 p-2.5 text-sm outline-none focus:ring-1 focus:ring-[#8B0000] bg-gray-50"
-                    value={imgUrlInput}
-                    onChange={e => setImgUrlInput(e.target.value)}
-                   />
-                </div>
-              </div>
+              <input 
+                type="text" 
+                placeholder="Cole a URL da imagem aqui..."
+                className="flex-1 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:ring-1 focus:ring-[#8B0000] bg-gray-50 font-bold"
+                value={imgUrlInput}
+                onChange={e => setImgUrlInput(e.target.value)}
+               />
               <button 
                 type="button" 
                 onClick={handleAddImgUrl}
-                className="bg-gray-900 text-white px-4 rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-black transition-colors"
+                className="bg-[#1F1F1F] text-white px-6 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all"
               >
-                Adicionar
+                Incluir
               </button>
             </div>
             
-            <div className="relative">
-              <label className="flex items-center justify-center space-x-2 w-full p-4 border-2 border-dashed border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors group">
-                <Upload size={18} className="text-gray-400 group-hover:text-[#8B0000]" />
-                <span className="text-xs font-bold text-gray-500 uppercase tracking-widest group-hover:text-gray-700">Upload de Arquivo</span>
-                <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
-              </label>
-            </div>
+            <label className="flex items-center justify-center space-x-3 w-full p-6 border-2 border-dashed border-gray-200 rounded-[2rem] hover:bg-gray-50 cursor-pointer transition-colors group">
+              <Upload size={20} className="text-gray-300 group-hover:text-[#8B0000]" />
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest group-hover:text-gray-600">Fazer Upload de Foto Local</span>
+              <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
+            </label>
 
             {formData.photos && formData.photos.length > 0 && (
-              <div className="grid grid-cols-4 gap-2 mt-2">
+              <div className="grid grid-cols-4 gap-3 mt-4">
                 {formData.photos.map((photo: string, idx: number) => (
-                  <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-gray-100 group">
+                  <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden border border-gray-100 group shadow-sm">
                     <img src={photo} alt="" className="w-full h-full object-cover" />
                     <button 
                       type="button"
                       onClick={() => removePhoto(idx)}
-                      className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute top-2 right-2 bg-red-600 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                     >
-                      <X size={10} />
+                      <X size={12} />
                     </button>
                   </div>
                 ))}
@@ -453,13 +445,13 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
       );
       case 'bank': return (
         <>
-          <InputField label="Nome do Banco" value={formData.name} onChange={v => setFormData({...formData, name: v})} />
+          <InputField label="Razão do Banco" value={formData.name} onChange={v => setFormData({...formData, name: v})} />
           <div className="grid grid-cols-2 gap-4">
-            <InputField label="Agência" value={formData.agency} onChange={v => setFormData({...formData, agency: v})} />
-            <InputField label="URL da Logo" value={formData.logo} onChange={v => setFormData({...formData, logo: v})} />
+            <InputField label="Número da Agência" value={formData.agency} onChange={v => setFormData({...formData, agency: v})} />
+            <InputField label="URL Logotipo" value={formData.logo} onChange={v => setFormData({...formData, logo: v})} />
           </div>
-          <InputField label="Telefone Contato" value={formData.phone} onChange={v => setFormData({...formData, phone: v})} />
-          <InputField label="E-mail" value={formData.email} onChange={v => setFormData({...formData, email: v})} />
+          <InputField label="Canal de Atendimento" value={formData.phone} onChange={v => setFormData({...formData, phone: v})} />
+          <InputField label="E-mail Gerência" value={formData.email} onChange={v => setFormData({...formData, email: v})} />
         </>
       );
       default: return null;
@@ -467,35 +459,41 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-          <input type="text" placeholder={`Buscar ${title}...`} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B0000] w-full md:w-80 bg-white text-gray-900 font-bold placeholder:font-normal" />
+    <div className="space-y-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+           <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em] mb-1">Módulo de Gestão SAP</h3>
+           <h2 className="text-3xl font-black text-gray-900 tracking-tighter">{title}</h2>
         </div>
-        <button onClick={() => handleOpenModal()} className="bg-[#8B0000] text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2 font-black text-xs uppercase tracking-widest shadow-lg hover:bg-[#6b0000] transition-all"><Plus size={18} /><span>Novo {title.slice(0, -1)}</span></button>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={20} />
+            <input type="text" placeholder={`Filtrar ${title.toLowerCase()}...`} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-12 pr-6 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#8B0000] w-full md:w-80 bg-white text-gray-900 font-bold shadow-sm" />
+          </div>
+          <button onClick={() => handleOpenModal()} className="bg-[#8B0000] text-white px-8 py-3.5 rounded-2xl flex items-center justify-center space-x-3 font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-[#6b0000] hover:scale-105 transition-all"><Plus size={18} /><span>Adicionar {title.slice(0, -1)}</span></button>
+        </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-[2.5rem] shadow-2xl border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
                 {getTableHeaders().map((h, idx) => (
-                  <th key={idx} className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">{h}</th>
+                  <th key={idx} className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{h}</th>
                 ))}
-                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Ações</th>
+                <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {filteredData.map(item => (
                 <tr key={item.id} className="hover:bg-gray-50/50 transition-colors text-sm group">
                   {renderRow(item)}
-                  <td className="px-6 py-4 text-right whitespace-nowrap">
-                    <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => handleOpenViewModal(item)} className="p-1.5 text-gray-400 hover:text-[#8B0000] hover:bg-red-50 rounded transition-all"><Eye size={16} /></button>
-                      <button onClick={() => handleOpenModal(item)} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all"><Edit2 size={16} /></button>
-                      <button onClick={() => handleDelete(item.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"><Trash2 size={16} /></button>
+                  <td className="px-8 py-6 text-right whitespace-nowrap">
+                    <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-[-10px]">
+                      <button onClick={() => handleOpenViewModal(item)} className="p-2.5 text-gray-400 hover:text-[#8B0000] hover:bg-red-50 rounded-xl transition-all"><Eye size={18} /></button>
+                      <button onClick={() => handleOpenModal(item)} className="p-2.5 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"><Edit2 size={18} /></button>
+                      <button onClick={() => handleDelete(item.id)} className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={18} /></button>
                     </div>
                   </td>
                 </tr>
@@ -504,25 +502,31 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
           </table>
         </div>
         {filteredData.length === 0 && (
-          <div className="py-20 text-center">
-            <p className="text-gray-300 font-black uppercase tracking-[0.2em] text-[10px]">Nenhum registro encontrado no Firestore</p>
+          <div className="py-24 text-center">
+             <div className="flex flex-col items-center justify-center opacity-20">
+                <AlertCircle size={64} strokeWidth={1} className="mb-4" />
+                <p className="text-gray-900 font-black uppercase tracking-[0.3em] text-xs">Nenhum registro encontrado no Sapien DB</p>
+             </div>
           </div>
         )}
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-8 overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="bg-[#8B0000] px-6 py-4 flex items-center justify-between text-white sticky top-0 z-10">
-              <h3 className="font-bold uppercase tracking-widest text-sm">{editingItem ? 'Editar' : 'Cadastrar'} {title.slice(0,-1)} Cloud</h3>
-              <button onClick={() => setIsModalOpen(false)}><X size={20} /></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-md overflow-y-auto">
+          <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-2xl my-8 overflow-hidden animate-in fade-in zoom-in duration-300">
+            <div className="bg-[#8B0000] px-10 py-8 flex items-center justify-between text-white sticky top-0 z-10">
+              <div>
+                 <h3 className="font-black uppercase tracking-widest text-sm">{editingItem ? 'Editar' : 'Cadastrar'} {title.slice(0,-1)} Cloud</h3>
+                 <p className="text-[10px] text-red-200 uppercase font-bold tracking-[0.2em] mt-1">Garantia de integridade Sapien Engine</p>
+              </div>
+              <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={28} /></button>
             </div>
-            <form onSubmit={handleFormSubmit} className="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
+            <form onSubmit={handleFormSubmit} className="p-10 space-y-6 max-h-[75vh] overflow-y-auto scrollbar-hide">
               {renderFormFields()}
-              <div className="flex justify-end space-x-3 mt-8 pt-4 border-t border-gray-100">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2 text-gray-400 font-bold uppercase text-[10px] tracking-widest">Cancelar</button>
-                <button type="submit" disabled={loading} className="px-6 py-2 bg-[#8B0000] text-white rounded-lg font-black uppercase text-[10px] tracking-widest shadow-md disabled:opacity-50">
-                  {loading ? 'Salvando...' : 'Salvar no Firestore'}
+              <div className="flex justify-end space-x-4 mt-12 pt-8 border-t border-gray-100">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-8 py-3 text-gray-400 font-black uppercase text-[10px] tracking-widest">Cancelar Operação</button>
+                <button type="submit" disabled={loading} className="px-10 py-3 bg-[#8B0000] text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-2xl disabled:opacity-50 hover:scale-105 transition-all">
+                  {loading ? 'Processando DB...' : 'Salvar no Firestore'}
                 </button>
               </div>
             </form>
@@ -540,39 +544,42 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
       )}
 
       {isViewModalOpen && viewingItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
-          <div className={`bg-white rounded-[2rem] shadow-2xl w-full ${type === 'broker' ? 'max-w-5xl' : 'max-w-2xl'} my-8 overflow-hidden animate-in fade-in zoom-in duration-300 relative`}>
-             <div className="p-10 pt-8">
-                <div className="flex justify-between items-center mb-10">
-                   <h4 className="text-[11px] font-black text-[#8B0000] uppercase tracking-[0.4em]">Detalhes do Registro Cloud</h4>
-                   <button onClick={() => setIsViewModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X size={28} className="text-gray-300" /></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-lg overflow-y-auto">
+          <div className={`bg-white rounded-[3rem] shadow-2xl w-full ${type === 'broker' ? 'max-w-6xl' : 'max-w-3xl'} my-8 overflow-hidden animate-in fade-in zoom-in duration-400 relative`}>
+             <div className="p-12">
+                <div className="flex justify-between items-start mb-12">
+                   <div>
+                      <h4 className="text-[10px] font-black text-[#8B0000] uppercase tracking-[0.5em] mb-2">Relatório Executivo Sapien</h4>
+                      <h2 className="text-4xl font-black text-gray-900 tracking-tighter">{viewingItem.name || viewingItem.title}</h2>
+                   </div>
+                   <button onClick={() => setIsViewModalOpen(false)} className="p-3 hover:bg-gray-100 rounded-full transition-all text-gray-300"><X size={36} /></button>
                 </div>
                 
                 {type === 'property' ? (
-                  <div className="space-y-10">
-                    <div className="w-full aspect-[16/9] rounded-3xl overflow-hidden shadow-2xl bg-gray-100">
+                  <div className="space-y-12">
+                    <div className="w-full aspect-[16/9] rounded-[3rem] overflow-hidden shadow-2xl border-4 border-white bg-gray-50">
                       {viewingItem.photos?.[0] ? (
                         <img src={viewingItem.photos[0]} alt="" className="w-full h-full object-cover" />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-300">
-                          <ImageIcon size={64} strokeWidth={1} />
+                        <div className="w-full h-full flex items-center justify-center text-gray-200">
+                          <ImageIcon size={100} strokeWidth={1} />
                         </div>
                       )}
                     </div>
-                    <div className="grid grid-cols-2 gap-x-12 gap-y-10">
-                       <DetailBlock label="UF" value={viewingItem.state} />
-                       <DetailBlock label="TIPO" value={viewingItem.type} />
-                       <DetailBlock label="VALOR DE VENDA" value={formatCurrency(Number(viewingItem.value))} />
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-10">
+                       <DetailBlock label="VALOR DE VENDA" value={formatCurrency(Number(viewingItem.value))} className="col-span-1" valueClass="text-3xl text-[#8B0000]" />
+                       <DetailBlock label="TIPO DE ATIVO" value={viewingItem.type} />
+                       <DetailBlock label="ESTADO (UF)" value={viewingItem.state} />
                        <DetailBlock label="BAIRRO" value={viewingItem.neighborhood} />
                        <DetailBlock label="CIDADE" value={viewingItem.city} />
-                       <DetailBlock label="DESCRIÇÃO" value={viewingItem.title} />
-                       <DetailBlock label="ENDEREÇO" value={viewingItem.address} className="col-span-2" />
+                       <DetailBlock label="TÍTULO CLOUD" value={viewingItem.title} className="col-span-2" />
+                       <DetailBlock label="ENDEREÇO TÉCNICO" value={viewingItem.address} className="col-span-3" />
                        {viewingItem.constructionCompanyId && (
                          <DetailBlock 
-                           label="CONSTRUTORA" 
+                           label="CONSTRUTORA ASSOCIADA" 
                            value={companies.find(c => c.id === viewingItem.constructionCompanyId)?.name || 'Vínculo removido'} 
-                           className="col-span-2"
-                           icon={<Building2 size={14} className="mr-2 text-[#8B0000]" />}
+                           className="col-span-3"
+                           icon={<Building2 size={16} className="mr-3 text-[#8B0000]" />}
                          />
                        )}
                     </div>
@@ -581,127 +588,124 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
                   (() => {
                     const { aReceber, recebido, filteredLeads } = calculateBrokerStats(viewingItem.id);
                     return (
-                      <div className="space-y-8">
-                        {/* Broker Top Dashboard */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                          <div className="lg:col-span-1 flex flex-col justify-center items-center bg-[#1F1F1F] text-white p-8 rounded-3xl shadow-xl">
-                            <div className="w-20 h-20 bg-[#8B0000] rounded-2xl flex items-center justify-center text-white font-black text-3xl shadow-lg mb-4">
+                      <div className="space-y-12">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                          <div className="lg:col-span-4 flex flex-col justify-center items-center bg-[#1F1F1F] text-white p-12 rounded-[3rem] shadow-2xl border-b-8 border-[#8B0000]">
+                            <div className="w-28 h-28 bg-[#8B0000] rounded-[2rem] flex items-center justify-center text-white font-black text-5xl shadow-2xl mb-8 transform hover:rotate-3 transition-transform">
                               {viewingItem.name?.charAt(0)}
                             </div>
-                            <h2 className="text-2xl font-black text-center leading-tight">{viewingItem.name}</h2>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-2">CRECI: {viewingItem.creci}</p>
-                            <div className="mt-6 w-full space-y-2">
-                               <div className="flex justify-between text-[10px] font-bold uppercase text-gray-500 tracking-tighter border-b border-gray-800 pb-2">
-                                  <span>Contatos</span>
+                            <h2 className="text-3xl font-black text-center leading-none tracking-tighter mb-4">{viewingItem.name}</h2>
+                            <span className="text-[10px] font-black text-red-500 uppercase tracking-[0.4em] bg-red-500/10 px-4 py-2 rounded-full mb-10 border border-red-500/20">CRECI {viewingItem.creci}</span>
+                            
+                            <div className="w-full space-y-4 pt-8 border-t border-gray-800">
+                               <div className="flex items-center space-x-4">
+                                  <div className="p-2 bg-white/5 rounded-lg text-gray-500"><Search size={16} /></div>
+                                  <p className="text-xs text-gray-300 font-bold truncate">{viewingItem.email}</p>
                                </div>
-                               <p className="text-xs text-gray-300 truncate">{viewingItem.email}</p>
-                               <p className="text-xs text-gray-300">{viewingItem.phone}</p>
+                               <div className="flex items-center space-x-4">
+                                  <div className="p-2 bg-white/5 rounded-lg text-gray-500"><MapPin size={16} /></div>
+                                  <p className="text-xs text-gray-300 font-bold">{viewingItem.phone}</p>
+                               </div>
                             </div>
                           </div>
 
-                          <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                             {/* Stats Grid */}
-                             <div className="p-6 border border-gray-100 rounded-3xl bg-blue-50/50 flex flex-col justify-between">
-                                <div>
-                                  <div className="flex items-center justify-between mb-4">
-                                     <div className="p-2 bg-blue-100 rounded-lg text-blue-600"><TrendingUp size={20} /></div>
-                                     <span className="text-[9px] font-black text-blue-600 uppercase bg-blue-100 px-2 py-1 rounded">Em Aberto</span>
+                          <div className="lg:col-span-8 space-y-6">
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                               <div className="p-8 border border-blue-50 rounded-[2.5rem] bg-blue-50/30 flex flex-col justify-between">
+                                  <div className="flex items-center justify-between mb-8">
+                                     <div className="p-4 bg-blue-600 text-white rounded-[1.5rem] shadow-lg shadow-blue-200"><TrendingUp size={28} /></div>
+                                     <span className="text-[10px] font-black text-blue-700 uppercase bg-blue-100 px-3 py-1.5 rounded-full border border-blue-200 tracking-widest">A Receber</span>
                                   </div>
-                                  <p className="text-3xl font-black text-blue-800 tracking-tighter">{formatCurrency(aReceber)}</p>
-                                </div>
-                                <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mt-4">Comissão a Receber</p>
-                             </div>
-                             
-                             <div className="p-6 border border-gray-100 rounded-3xl bg-green-50/50 flex flex-col justify-between">
-                                <div>
-                                  <div className="flex items-center justify-between mb-4">
-                                     <div className="p-2 bg-green-100 rounded-lg text-green-600"><Wallet size={20} /></div>
-                                     <span className="text-[9px] font-black text-green-600 uppercase bg-green-100 px-2 py-1 rounded">Finalizado</span>
+                                  <div>
+                                     <p className="text-4xl font-black text-blue-900 tracking-tighter mb-2">{formatCurrency(aReceber)}</p>
+                                     <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Carteira em processamento</p>
                                   </div>
-                                  <p className="text-3xl font-black text-green-800 tracking-tighter">{formatCurrency(recebido)}</p>
-                                </div>
-                                <p className="text-[10px] font-bold text-green-400 uppercase tracking-widest mt-4">Comissão Recebida</p>
+                               </div>
+                               
+                               <div className="p-8 border border-green-50 rounded-[2.5rem] bg-green-50/30 flex flex-col justify-between">
+                                  <div className="flex items-center justify-between mb-8">
+                                     <div className="p-4 bg-green-600 text-white rounded-[1.5rem] shadow-lg shadow-green-200"><Wallet size={28} /></div>
+                                     <span className="text-[10px] font-black text-green-700 uppercase bg-green-100 px-3 py-1.5 rounded-full border border-green-200 tracking-widest">Recebido</span>
+                                  </div>
+                                  <div>
+                                     <p className="text-4xl font-black text-green-900 tracking-tighter mb-2">{formatCurrency(recebido)}</p>
+                                     <p className="text-[10px] font-bold text-green-400 uppercase tracking-widest">Ganhos liquidados cloud</p>
+                                  </div>
+                               </div>
                              </div>
 
-                             {/* Filters Area */}
-                             <div className="col-span-1 md:col-span-2 bg-gray-50 p-6 rounded-3xl border border-gray-100">
-                                <div className="flex items-center space-x-2 mb-4">
-                                   <Filter size={14} className="text-gray-400" />
-                                   <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Filtros de Período (Abertura Lead)</span>
+                             <div className="bg-gray-50 p-8 rounded-[2.5rem] border border-gray-100">
+                                <div className="flex items-center space-x-3 mb-6">
+                                   <Filter size={18} className="text-[#8B0000]" />
+                                   <span className="text-[11px] font-black uppercase text-gray-900 tracking-widest">Filtros Avançados de Performance</span>
                                 </div>
-                                <div className="flex flex-wrap gap-4 items-end">
-                                   <div className="space-y-1">
-                                      <label className="text-[9px] font-black text-gray-400 uppercase">Data Inicial</label>
-                                      <input type="date" className="p-2 text-xs border border-gray-200 rounded-lg bg-white outline-none focus:ring-1 focus:ring-[#8B0000]" value={brokerDateStart} onChange={e => setBrokerDateStart(e.target.value)} />
+                                <div className="flex flex-wrap gap-8 items-end">
+                                   <div className="space-y-2">
+                                      <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Data de Corte (Inicial)</label>
+                                      <input type="date" className="w-48 p-3 text-xs border border-gray-200 rounded-xl bg-white font-bold outline-none focus:ring-2 focus:ring-[#8B0000]" value={brokerDateStart} onChange={e => setBrokerDateStart(e.target.value)} />
                                    </div>
-                                   <div className="space-y-1">
-                                      <label className="text-[9px] font-black text-gray-400 uppercase">Data Final</label>
-                                      <input type="date" className="p-2 text-xs border border-gray-200 rounded-lg bg-white outline-none focus:ring-1 focus:ring-[#8B0000]" value={brokerDateEnd} onChange={e => setBrokerDateEnd(e.target.value)} />
+                                   <div className="space-y-2">
+                                      <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Data de Corte (Final)</label>
+                                      <input type="date" className="w-48 p-3 text-xs border border-gray-200 rounded-xl bg-white font-bold outline-none focus:ring-2 focus:ring-[#8B0000]" value={brokerDateEnd} onChange={e => setBrokerDateEnd(e.target.value)} />
                                    </div>
                                    <button 
                                       onClick={() => { setBrokerDateStart(''); setBrokerDateEnd(''); }} 
-                                      className="p-2.5 text-[10px] font-bold uppercase text-gray-400 hover:text-red-600 transition-colors"
-                                   >Limpar</button>
+                                      className="px-6 py-3 text-[10px] font-black uppercase text-gray-400 hover:text-red-600 transition-colors tracking-widest"
+                                   >Limpar Filtros</button>
                                 </div>
                              </div>
                           </div>
                         </div>
 
-                        {/* Leads Detail List */}
-                        <div className="space-y-4">
-                           <div className="flex items-center justify-between px-2">
-                              <h3 className="text-[11px] font-black uppercase text-gray-400 tracking-widest">Histórico de Performance do Corretor</h3>
-                              <span className="text-[10px] font-bold text-gray-400">{filteredLeads.length} registros no período</span>
+                        <div className="space-y-6">
+                           <div className="flex items-center justify-between px-6">
+                              <h3 className="text-xs font-black uppercase text-gray-400 tracking-[0.3em]">Lista Detalhada de Leads e Conversões</h3>
+                              <span className="text-[10px] font-black text-[#8B0000] bg-red-50 px-3 py-1 rounded-full">{filteredLeads.length} Ocorrências</span>
                            </div>
                            
-                           <div className="grid grid-cols-1 gap-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
+                           <div className="grid grid-cols-1 gap-4 max-h-[450px] overflow-y-auto pr-4 scrollbar-hide pb-10">
                               {filteredLeads.map(lead => {
                                  const client = clients.find(c => c.id === lead.clientId);
                                  const property = properties.find(p => p.id === lead.propertyId);
-                                 const company = companies.find(c => c.id === property?.constructionCompanyId);
+                                 const isSuccess = lead.currentPhase === LeadPhase.ASSINATURA_CONTRATO;
                                  return (
-                                    <div key={lead.id} className="bg-white border border-gray-100 p-5 rounded-2xl hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between group">
-                                       <div className="flex items-center space-x-4 mb-4 md:mb-0">
-                                          <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-[#8B0000] font-black text-sm group-hover:bg-[#8B0000] group-hover:text-white transition-colors">
+                                    <div key={lead.id} className="bg-white border border-gray-100 p-8 rounded-[2rem] hover:shadow-2xl transition-all flex flex-col md:flex-row md:items-center justify-between group border-l-8 border-l-[#F4F6F8] hover:border-l-[#8B0000]">
+                                       <div className="flex items-center space-x-6 mb-6 md:mb-0">
+                                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-lg shadow-sm transition-colors ${isSuccess ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'}`}>
                                              {client?.name?.charAt(0)}
                                           </div>
-                                          <div>
-                                             <p className="text-sm font-black text-gray-900 group-hover:text-[#8B0000] transition-colors">{client?.name}</p>
-                                             <div className="flex items-center space-x-2 mt-0.5">
-                                                <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${lead.currentPhase === LeadPhase.ASSINATURA_CONTRATO ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                                          <div className="space-y-1">
+                                             <p className="text-xl font-black text-gray-900 tracking-tight">{client?.name || 'Cliente Externo'}</p>
+                                             <div className="flex items-center space-x-3">
+                                                <span className={`text-[9px] font-black uppercase px-3 py-1 rounded-full border ${isSuccess ? 'bg-green-500 text-white border-green-600' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
                                                    {lead.currentPhase}
                                                 </span>
-                                                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">
-                                                  Aberto em: {new Date(lead.createdAt).toLocaleDateString()}
-                                                </span>
+                                                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Início: {new Date(lead.createdAt).toLocaleDateString()}</span>
                                              </div>
                                           </div>
                                        </div>
                                        
-                                       <div className="flex flex-col md:items-end space-y-1">
-                                          <div className="flex items-center text-xs font-bold text-gray-600">
-                                             <MapPin size={12} className="mr-1.5 text-red-500" />
-                                             <span className="truncate max-w-[200px]">{property?.title}</span>
+                                       <div className="flex flex-col md:items-end space-y-1 md:px-8 border-l border-gray-50 md:ml-8">
+                                          <div className="flex items-center text-sm font-bold text-gray-700">
+                                             <MapPin size={14} className="mr-2 text-red-500" />
+                                             <span className="truncate max-w-[250px]">{property?.title}</span>
                                           </div>
-                                          <div className="flex items-center text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-                                             <Building2 size={10} className="mr-1.5" />
-                                             <span>{company?.name || '---'}</span>
-                                          </div>
+                                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{formatCurrency(property?.value || 0)} (VGV)</p>
                                        </div>
 
-                                       <div className="md:w-32 text-right mt-4 md:mt-0">
-                                          <p className="text-sm font-black text-[#8B0000]">
-                                             {formatCurrency((Number(property?.value) * Number(viewingItem.commissionRate)) / 100)}
+                                       <div className="md:w-48 text-right mt-6 md:mt-0 bg-gray-50/50 p-4 rounded-2xl border border-gray-100 group-hover:bg-[#1F1F1F] group-hover:text-white transition-all">
+                                          <p className={`text-xl font-black ${isSuccess ? 'text-green-600 group-hover:text-green-400' : 'text-[#8B0000] group-hover:text-red-400'}`}>
+                                             {formatCurrency((Number(property?.value || 0) * Number(viewingItem.commissionRate || 0)) / 100)}
                                           </p>
-                                          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Estimativa</p>
+                                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">{isSuccess ? 'Comissão Liquidada' : 'Previsão Comissão'}</p>
                                        </div>
                                     </div>
                                  );
                               })}
                               {filteredLeads.length === 0 && (
-                                 <div className="py-20 flex flex-col items-center justify-center border-2 border-dashed border-gray-50 rounded-3xl opacity-30">
-                                    <Briefcase size={32} className="mb-4" />
-                                    <p className="text-[10px] font-black uppercase tracking-widest">Nenhum lead encontrado para este corretor</p>
+                                 <div className="py-24 flex flex-col items-center justify-center border-2 border-dashed border-gray-100 rounded-[3rem] opacity-20">
+                                    <Briefcase size={48} className="mb-4" />
+                                    <p className="text-[11px] font-black uppercase tracking-[0.4em]">Histórico de Atividade Vazio</p>
                                  </div>
                               )}
                            </div>
@@ -710,24 +714,25 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
                     );
                   })()
                 ) : (
-                  <div className="grid grid-cols-2 gap-x-8 gap-y-4 max-h-[60vh] overflow-y-auto pr-4">
+                  <div className="grid grid-cols-2 gap-x-12 gap-y-6 max-h-[60vh] overflow-y-auto pr-6">
                     {Object.entries(viewingItem).map(([key, value]) => (
                       key !== 'id' && key !== 'photos' && key !== 'logo' && key !== 'createdAt' && key !== 'updatedAt' && value !== undefined && value !== '' && (
-                        <div key={key} className="border-b border-gray-50 pb-2">
-                          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{key}</label>
-                          <p className="text-gray-900 font-bold text-sm">{String(value)}</p>
+                        <div key={key} className="border-b border-gray-50 pb-4">
+                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">{key}</label>
+                          <p className="text-gray-900 font-bold text-lg tracking-tight">{String(value)}</p>
                         </div>
                       )
                     ))}
                   </div>
                 )}
 
-                <div className="mt-12 flex justify-end">
+                <div className="mt-16 flex justify-between items-center border-t border-gray-100 pt-10">
+                   <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">Auditoria Sapien Cloud Ativa</p>
                    <button 
                     onClick={() => { setIsViewModalOpen(false); handleOpenModal(viewingItem); }} 
-                    className="text-[11px] font-black uppercase tracking-[0.2em] text-[#8B0000] flex items-center hover:bg-red-50 px-4 py-2 rounded-lg transition-all"
+                    className="px-10 py-4 bg-[#1F1F1F] text-white rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest shadow-2xl hover:bg-black hover:scale-105 transition-all flex items-center"
                    >
-                      <Edit2 size={14} className="mr-2" /> Editar Informações
+                      <Edit2 size={16} className="mr-3" /> Alterar Dados do Registro
                    </button>
                 </div>
              </div>
@@ -738,31 +743,33 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
   );
 };
 
-// UI Components
 const QuickAddModal: React.FC<{type: string, onClose: () => void, onSave: (d: any) => void, companies?: ConstructionCompany[]}> = ({type, onClose, onSave, companies}) => {
   const [data, setData] = useState<any>({});
   
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-200">
-        <div className="bg-[#1F1F1F] px-6 py-4 flex items-center justify-between text-white">
-          <h3 className="font-black uppercase tracking-widest text-[10px]">Cadastro Rápido: {type}</h3>
-          <button onClick={onClose}><X size={18} /></button>
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+      <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-200">
+        <div className="bg-[#1F1F1F] px-8 py-6 flex items-center justify-between text-white">
+          <div>
+             <h3 className="font-black uppercase tracking-widest text-xs">Acesso Rápido Cloud</h3>
+             <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Inclusão em {type}</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={20} /></button>
         </div>
-        <form onSubmit={e => { e.preventDefault(); onSave(data); }} className="p-6 space-y-4">
+        <form onSubmit={e => { e.preventDefault(); onSave(data); }} className="p-8 space-y-6">
           {type === 'company' && (
             <>
               <InputField label="Razão Social" value={data.name} onChange={v => setData({...data, name: v})} />
-              <InputField label="Município" value={data.city} onChange={v => setData({...data, city: v})} />
+              <InputField label="Município de Operação" value={data.city} onChange={v => setData({...data, city: v})} />
             </>
           )}
           {type === 'property' && (
             <>
-              <InputField label="Título do Imóvel" value={data.title} onChange={v => setData({...data, title: v})} />
-              <InputField label="Valor (R$)" type="number" value={data.value} onChange={v => setData({...data, value: Number(v)})} />
+              <InputField label="Descrição/Nome" value={data.title} onChange={v => setData({...data, title: v})} />
+              <InputField label="VGV (Valor Venda)" type="number" value={data.value} onChange={v => setData({...data, value: Number(v)})} />
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-gray-400 uppercase">Construtora</label>
-                <select className="w-full border border-gray-200 rounded-lg p-2 text-sm bg-white font-bold" value={data.constructionCompanyId} onChange={e => setData({...data, constructionCompanyId: e.target.value})}>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Incorporadora Titular</label>
+                <select className="w-full border border-gray-200 rounded-xl p-3 text-sm bg-white font-bold outline-none" value={data.constructionCompanyId} onChange={e => setData({...data, constructionCompanyId: e.target.value})}>
                    <option value="">Selecione...</option>
                    {companies?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
@@ -772,18 +779,19 @@ const QuickAddModal: React.FC<{type: string, onClose: () => void, onSave: (d: an
           {type === 'broker' && (
             <>
               <InputField label="Nome Corretor" value={data.name} onChange={v => setData({...data, name: v})} />
-              <InputField label="CRECI" value={data.creci} onChange={v => setData({...data, creci: v})} />
+              <InputField label="CRECI Profissional" value={data.creci} onChange={v => setData({...data, creci: v})} />
             </>
           )}
           {type === 'bank' && (
             <>
-              <InputField label="Nome Banco" value={data.name} onChange={v => setData({...data, name: v})} />
-              <InputField label="Agência" value={data.agency} onChange={v => setData({...data, agency: v})} />
+              <InputField label="Nome Instituição" value={data.name} onChange={v => setData({...data, name: v})} />
+              <InputField label="Código Agência" value={data.agency} onChange={v => setData({...data, agency: v})} />
             </>
           )}
-          <div className="flex justify-end space-x-2 pt-4">
-             <button type="button" onClick={onClose} className="px-4 py-2 text-[10px] font-bold uppercase text-gray-400">Cancelar</button>
-             <button type="submit" className="px-6 py-2 bg-[#8B0000] text-white rounded-lg font-black uppercase text-[10px] shadow-lg">Cadastrar</button>
+          <div className="flex justify-end pt-6 border-t border-gray-50">
+             <button type="submit" className="w-full py-4 bg-[#8B0000] text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl hover:bg-[#6b0000] transition-all">
+                Salvar e Sincronizar
+             </button>
           </div>
         </form>
       </div>
@@ -791,50 +799,50 @@ const QuickAddModal: React.FC<{type: string, onClose: () => void, onSave: (d: an
   );
 };
 
-const DetailBlock: React.FC<{ label: string; value: string; className?: string; icon?: React.ReactNode }> = ({ label, value, className = "", icon }) => (
-  <div className={`space-y-1.5 ${className}`}>
-    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">{label}</label>
+const DetailBlock: React.FC<{ label: string; value: string; className?: string; icon?: React.ReactNode; valueClass?: string }> = ({ label, value, className = "", icon, valueClass = "text-lg" }) => (
+  <div className={`space-y-2 ${className}`}>
+    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block">{label}</label>
     <div className="flex items-center">
       {icon}
-      <p className="text-gray-900 font-bold text-base tracking-tight leading-tight">{value || '---'}</p>
+      <p className={`text-gray-900 font-black tracking-tighter leading-none ${valueClass}`}>{value || '---'}</p>
     </div>
   </div>
 );
 
 const InputField: React.FC<{ label: string; value: any; onChange: (v: string) => void; type?: string; step?: string }> = ({ label, value, onChange, type = "text", step }) => (
-  <div className="space-y-1">
+  <div className="space-y-1.5">
     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{label}</label>
     <input 
       type={type} 
       step={step} 
-      placeholder={`Digite ${label.toLowerCase()}...`}
+      placeholder={`Informe ${label.toLowerCase()}...`}
       value={value || ''} 
       onChange={e => onChange(e.target.value)} 
-      className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900 font-bold placeholder:font-normal placeholder:text-gray-300" 
+      className="w-full border border-gray-200 rounded-xl p-3.5 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900 font-bold placeholder:font-normal placeholder:text-gray-300 shadow-sm" 
       required={type !== 'file' && type !== 'number'}
     />
   </div>
 );
 
 const SelectField: React.FC<{ label: string; value: any; options: {id: string, label: string}[], onChange: (v: string) => void; onQuickAdd: () => void }> = ({ label, value, options, onChange, onQuickAdd }) => (
-  <div className="space-y-1">
+  <div className="space-y-1.5">
     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{label}</label>
     <div className="flex gap-2">
       <select 
         value={value || ''} 
         onChange={e => onChange(e.target.value)}
-        className="flex-1 border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:ring-1 focus:ring-[#8B0000] bg-white font-bold text-gray-900"
+        className="flex-1 border border-gray-200 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-[#8B0000] bg-white font-bold text-gray-900 shadow-sm"
       >
-        <option value="">Selecione {label.toLowerCase()}...</option>
+        <option value="">Escolher {label.toLowerCase()}...</option>
         {options.map(opt => <option key={opt.id} value={opt.id}>{opt.label}</option>)}
       </select>
       <button 
         type="button" 
         onClick={onQuickAdd}
-        className="p-2.5 bg-gray-100 text-[#8B0000] rounded-lg hover:bg-gray-200 transition-colors"
+        className="p-3.5 bg-gray-50 text-[#8B0000] rounded-xl border border-gray-100 hover:bg-red-50 transition-all shadow-sm"
         title={`Cadastrar Novo ${label}`}
       >
-        <Plus size={18} />
+        <Plus size={22} />
       </button>
     </div>
   </div>
