@@ -13,7 +13,7 @@ import LeadTable from './components/LeadTable';
 import Login from './components/Login';
 import GenericCrud from './components/GenericCrud';
 import { auth } from './firebase';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { 
   clientService, brokerService, propertyService, 
   bankService, companyService, leadService 
@@ -21,9 +21,12 @@ import {
 import { X, User, Home, Landmark, Briefcase, Calendar, Clock, Edit2, Trash2, Image as ImageIcon, DollarSign, Building2 } from 'lucide-react';
 
 const App: React.FC = () => {
+  const [user, setUser] = useState<FirebaseUser | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [currentView, setCurrentView] = useState<ViewType>('Dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
   const [isLeadViewOpen, setIsLeadViewOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
@@ -37,8 +40,9 @@ const App: React.FC = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setIsAuthenticated(!!user);
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+      setIsAuthenticated(!!firebaseUser);
       setIsLoading(false);
     });
     return () => unsubscribe();
@@ -129,11 +133,24 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-[#F4F6F8]">
-      <Sidebar currentView={currentView} setView={setCurrentView} menuItems={MENU_ITEMS} onLogout={handleLogout} />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title={currentView} onLogout={handleLogout} />
-        <main className="flex-1 overflow-auto p-6">
+    <div className="flex h-screen bg-[#F4F6F8] overflow-hidden">
+      <Sidebar 
+        currentView={currentView} 
+        setView={setCurrentView} 
+        menuItems={MENU_ITEMS} 
+        onLogout={handleLogout} 
+        isCollapsed={!isSidebarOpen}
+        setIsCollapsed={(val) => setIsSidebarOpen(!val)}
+      />
+      
+      <div className="flex-1 flex flex-col min-w-0 transition-all duration-300 relative">
+        <Header 
+          title={currentView} 
+          onLogout={handleLogout} 
+          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+          userEmail={user?.email || ''}
+        />
+        <main className="flex-1 overflow-auto p-4 md:p-6">
           <div className="max-w-7xl mx-auto h-full">{renderView()}</div>
         </main>
       </div>
@@ -166,6 +183,8 @@ const App: React.FC = () => {
   );
 };
 
+// Sub-componentes do App (Modais) mantidos conforme código original para preservar funcionalidade.
+
 const LeadModal: React.FC<any> = ({ lead, onClose, onSave, clients, brokers, properties, banks }) => {
   const [data, setData] = useState({
     clientId: lead?.clientId || '',
@@ -176,7 +195,7 @@ const LeadModal: React.FC<any> = ({ lead, onClose, onSave, clients, brokers, pro
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
         <div className="bg-[#8B0000] px-6 py-4 flex items-center justify-between text-white">
           <h3 className="font-bold uppercase tracking-widest text-sm">{lead ? 'Editar Lead Cloud' : 'Novo Lead Cloud'}</h3>
@@ -250,7 +269,7 @@ const LeadDetailsModal: React.FC<any> = ({ lead, onClose, onEdit, onDelete, clie
   const isCompleted = lead.currentPhase === LeadPhase.ASSINATURA_CONTRATO;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md overflow-y-auto">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md overflow-y-auto">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl my-8 overflow-hidden animate-in fade-in zoom-in duration-300">
         <div className="p-8">
           <div className="flex justify-between items-start mb-6">
