@@ -25,6 +25,10 @@ export interface Client {
   email: string;
   income: number;
   status: 'Ativo' | 'Inativo';
+  propertyId?: string;
+  brokerId?: string;
+  bankId?: string;
+  createdAt?: string;
 }
 
 export interface Broker {
