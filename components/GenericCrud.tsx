@@ -122,7 +122,12 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
     try {
       let res;
       if (quickType === 'company') res = await companyService.create(quickData);
-      else if (quickType === 'property') res = await propertyService.create(quickData);
+      else if (quickType === 'property') {
+        const { type: pType, neighborhood, city, state } = quickData;
+        const autoTitle = `${pType || ''} ${neighborhood || ''} ${city || ''} ${state || ''}`.trim().replace(/\s+/g, ' ');
+        quickData.title = autoTitle;
+        res = await propertyService.create(quickData);
+      }
       else if (quickType === 'broker') res = await brokerService.create(quickData);
       else if (quickType === 'bank') res = await bankService.create(quickData);
       
@@ -746,56 +751,157 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
 };
 
 const QuickAddModal: React.FC<{type: string, onClose: () => void, onSave: (d: any) => void, companies?: ConstructionCompany[]}> = ({type, onClose, onSave, companies}) => {
-  const [data, setData] = useState<any>({});
+  const [data, setData] = useState<any>({
+    type: "Apartamento",
+    photos: [],
+    commissionRate: 0,
+    value: 0
+  });
+  const [imgUrlInput, setImgUrlInput] = useState('');
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        const currentPhotos = data.photos || [];
+        setData({ ...data, photos: [...currentPhotos, base64String] });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAddImgUrl = () => {
+    if (!imgUrlInput) return;
+    const currentPhotos = data.photos || [];
+    setData({ ...data, photos: [...currentPhotos, imgUrlInput] });
+    setImgUrlInput('');
+  };
+
+  const removePhoto = (index: number) => {
+    const currentPhotos = [...(data.photos || [])];
+    currentPhotos.splice(index, 1);
+    setData({ ...data, photos: currentPhotos });
+  };
   
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-      <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-200">
-        <div className="bg-[#1F1F1F] px-8 py-6 flex items-center justify-between text-white">
+      <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in duration-200">
+        <div className="bg-[#1F1F1F] px-8 py-6 flex items-center justify-between text-white shrink-0 sticky top-0 z-10">
           <div>
              <h3 className="font-black uppercase tracking-widest text-xs">Acesso Rápido Cloud</h3>
-             <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Inclusão em {type}</p>
+             <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Inclusão Direta em {type}</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={20} /></button>
         </div>
-        <form onSubmit={e => { e.preventDefault(); onSave(data); }} className="p-8 space-y-6">
-          {type === 'company' && (
-            <>
-              <InputField label="Razão Social" value={data.name} onChange={v => setData({...data, name: v})} />
-              <InputField label="Município de Operação" value={data.city} onChange={v => setData({...data, city: v})} />
-            </>
-          )}
-          {type === 'property' && (
-            <>
-              <InputField label="Descrição/Nome" value={data.title} onChange={v => setData({...data, title: v})} />
-              <InputField label="VGV (Valor Venda)" type="number" value={data.value} onChange={v => setData({...data, value: Number(v)})} />
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Incorporadora Titular</label>
-                <select className="w-full border border-gray-200 rounded-xl p-3 text-sm bg-white font-bold outline-none" value={data.constructionCompanyId} onChange={e => setData({...data, constructionCompanyId: e.target.value})}>
-                   <option value="">Selecione...</option>
-                   {companies?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+        
+        <div className="flex-1 overflow-y-auto p-8 scrollbar-hide">
+          <form onSubmit={e => { e.preventDefault(); onSave(data); }} className="space-y-6">
+            {type === 'company' && (
+              <>
+                <InputField label="Razão Social" value={data.name} onChange={v => setData({...data, name: v})} />
+                <InputField label="CNPJ" value={data.cnpj} onChange={v => setData({...data, cnpj: v})} />
+                <InputField label="Município de Operação" value={data.city} onChange={v => setData({...data, city: v})} />
+              </>
+            )}
+            
+            {type === 'property' && (
+              <div className="space-y-8">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tipo de Imóvel</label>
+                    <select 
+                      className="w-full border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900 font-bold" 
+                      value={data.type} 
+                      onChange={e => setData({...data, type: e.target.value})}
+                    >
+                      {PROPERTY_TYPES.map(pt => <option key={pt} value={pt}>{pt}</option>)}
+                    </select>
+                  </div>
+                  <InputField label="Valor Venda (R$)" type="number" value={data.value} onChange={v => setData({...data, value: Number(v)})} />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Incorporadora Titular</label>
+                  <select className="w-full border border-gray-200 rounded-xl p-3 text-sm bg-white font-bold outline-none" value={data.constructionCompanyId} onChange={e => setData({...data, constructionCompanyId: e.target.value})}>
+                    <option value="">Selecione...</option>
+                    {companies?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-black text-[#8B0000] uppercase tracking-[0.4em]">Localização</h4>
+                  <InputField label="Endereço" value={data.address} onChange={v => setData({...data, address: v})} />
+                  <div className="grid grid-cols-3 gap-3">
+                    <InputField label="Bairro" value={data.neighborhood} onChange={v => setData({...data, neighborhood: v})} />
+                    <InputField label="Cidade" value={data.city} onChange={v => setData({...data, city: v})} />
+                    <InputField label="UF" value={data.state} onChange={v => setData({...data, state: v})} />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-black text-[#8B0000] uppercase tracking-[0.4em]">Galeria de Fotos</h4>
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      placeholder="Cole a URL da imagem..."
+                      className="flex-1 border border-gray-200 rounded-xl p-3 text-sm outline-none bg-gray-50 font-bold"
+                      value={imgUrlInput}
+                      onChange={e => setImgUrlInput(e.target.value)}
+                    />
+                    <button type="button" onClick={handleAddImgUrl} className="bg-gray-800 text-white px-4 rounded-xl text-[10px] font-black uppercase">Incluir</button>
+                  </div>
+                  <label className="flex items-center justify-center space-x-3 w-full p-4 border-2 border-dashed border-gray-200 rounded-2xl hover:bg-gray-50 cursor-pointer group transition-colors">
+                    <Upload size={18} className="text-gray-300 group-hover:text-[#8B0000]" />
+                    <span className="text-[10px] font-black text-gray-400 uppercase">Fazer Upload Local</span>
+                    <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
+                  </label>
+                  {data.photos && data.photos.length > 0 && (
+                    <div className="grid grid-cols-4 gap-2">
+                      {data.photos.map((photo: string, idx: number) => (
+                        <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-gray-100 shadow-sm group">
+                          <img src={photo} alt="" className="w-full h-full object-cover" />
+                          <button type="button" onClick={() => removePhoto(idx)} className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100"><X size={10} /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
-            </>
-          )}
-          {type === 'broker' && (
-            <>
-              <InputField label="Nome Corretor" value={data.name} onChange={v => setData({...data, name: v})} />
-              <InputField label="CRECI Profissional" value={data.creci} onChange={v => setData({...data, creci: v})} />
-            </>
-          )}
-          {type === 'bank' && (
-            <>
-              <InputField label="Nome Instituição" value={data.name} onChange={v => setData({...data, name: v})} />
-              <InputField label="Código Agência" value={data.agency} onChange={v => setData({...data, agency: v})} />
-            </>
-          )}
-          <div className="flex justify-end pt-6 border-t border-gray-50">
-             <button type="submit" className="w-full py-4 bg-[#8B0000] text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl hover:bg-[#6b0000] transition-all">
-                Salvar e Sincronizar
-             </button>
-          </div>
-        </form>
+            )}
+            
+            {type === 'broker' && (
+              <div className="space-y-4">
+                <InputField label="Nome Completo do Corretor" value={data.name} onChange={v => setData({...data, name: v})} />
+                <div className="grid grid-cols-2 gap-4">
+                  <InputField label="CRECI Profissional" value={data.creci} onChange={v => setData({...data, creci: v})} />
+                  <InputField label="Taxa de Comissão (%)" type="number" step="0.1" value={data.commissionRate} onChange={v => setData({...data, commissionRate: Number(v)})} />
+                </div>
+                <InputField label="Telefone de Contato" value={data.phone} onChange={v => setData({...data, phone: v})} />
+                <InputField label="E-mail Profissional" type="email" value={data.email} onChange={v => setData({...data, email: v})} />
+              </div>
+            )}
+            
+            {type === 'bank' && (
+              <>
+                <InputField label="Nome Instituição" value={data.name} onChange={v => setData({...data, name: v})} />
+                <InputField label="Código Agência" value={data.agency} onChange={v => setData({...data, agency: v})} />
+                <InputField label="E-mail Gerência" value={data.email} onChange={v => setData({...data, email: v})} />
+              </>
+            )}
+          </form>
+        </div>
+
+        <div className="p-8 border-t border-gray-100 bg-white shrink-0">
+           <button 
+            type="button"
+            onClick={() => onSave(data)}
+            className="w-full py-4 bg-[#8B0000] text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl hover:bg-[#6b0000] transition-all"
+           >
+              Finalizar e Sincronizar Cadastro
+           </button>
+        </div>
       </div>
     </div>
   );
