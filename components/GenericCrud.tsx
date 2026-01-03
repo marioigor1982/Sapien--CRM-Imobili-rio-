@@ -50,7 +50,6 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
   const [loading, setLoading] = useState(false);
   const [imgUrlInput, setImgUrlInput] = useState('');
   
-  // Broker Dashboard Filters
   const [brokerDateStart, setBrokerDateStart] = useState('');
   const [brokerDateEnd, setBrokerDateEnd] = useState('');
 
@@ -145,32 +144,6 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
     }
   };
 
-  const handleAddImgUrl = () => {
-    if (!imgUrlInput) return;
-    const currentPhotos = formData.photos || [];
-    setFormData({ ...formData, photos: [...currentPhotos, imgUrlInput] });
-    setImgUrlInput('');
-  };
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        const currentPhotos = formData.photos || [];
-        setFormData({ ...formData, photos: [...currentPhotos, base64String] });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const removePhoto = (index: number) => {
-    const currentPhotos = [...(formData.photos || [])];
-    currentPhotos.splice(index, 1);
-    setFormData({ ...formData, photos: currentPhotos });
-  };
-
   const calculateBrokerStats = (brokerId: string) => {
     let brokerLeads = leads.filter(l => l.brokerId === brokerId);
     
@@ -224,78 +197,10 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
 
   const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
-  const renderRow = (item: any) => {
-    switch(type) {
-      case 'client': return (
-        <>
-          <td className="px-6 py-4 font-bold text-gray-900 whitespace-nowrap hover:text-[#8B0000] cursor-pointer" onClick={() => handleOpenViewModal(item)}>{item.name}</td>
-          <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{item.taxId}</td>
-          <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{item.phone}</td>
-          <td className="px-6 py-4 text-gray-500">{item.email}</td>
-          <td className="px-6 py-4 text-gray-900 font-bold whitespace-nowrap">{formatCurrency(Number(item.income))}</td>
-          <td className="px-6 py-4">
-            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${item.status === 'Ativo' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-              {item.status}
-            </span>
-          </td>
-        </>
-      );
-      case 'broker': 
-        const { aReceber, recebido } = calculateBrokerStats(item.id);
-        return (
-          <>
-            <td className="px-6 py-4 font-bold text-gray-900 whitespace-nowrap hover:text-[#8B0000] cursor-pointer" onClick={() => handleOpenViewModal(item)}>{item.name}</td>
-            <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{item.creci}</td>
-            <td className="px-6 py-4 text-gray-900 font-bold text-center whitespace-nowrap">{item.commissionRate}%</td>
-            <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{item.phone}</td>
-            <td className="px-6 py-4 font-bold text-blue-600 whitespace-nowrap">{formatCurrency(aReceber)}</td>
-            <td className="px-6 py-4 font-bold text-green-600 whitespace-nowrap">{formatCurrency(recebido)}</td>
-          </>
-        );
-      case 'property': return (
-        <>
-          <td className="px-6 py-4 font-bold whitespace-nowrap">
-            <div className="flex items-center space-x-3 cursor-pointer group" onClick={() => handleOpenViewModal(item)}>
-              <div className="w-10 h-10 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 shrink-0">
-                {item.photos?.[0] ? <img src={item.photos[0]} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform" /> : <div className="w-full h-full flex items-center justify-center text-gray-300"><ImageIcon size={16} /></div>}
-              </div>
-              <span className="group-hover:text-[#8B0000] transition-colors truncate max-w-[200px]">{item.title}</span>
-            </div>
-          </td>
-          <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{item.type}</td>
-          <td className="px-6 py-4 font-bold text-[#8B0000] whitespace-nowrap">{formatCurrency(Number(item.value))}</td>
-          <td className="px-6 py-4 text-gray-500 truncate max-w-xs">{item.city} / {item.state}</td>
-        </>
-      );
-      case 'bank': return (
-        <>
-          <td className="px-6 py-4">
-            <div className="w-10 h-10 bg-white rounded-lg border border-gray-100 p-1 flex items-center justify-center">
-              {item.logo ? <img src={item.logo} alt="" className="max-w-full max-h-full object-contain" /> : <Landmark size={18} className="text-gray-300" />}
-            </div>
-          </td>
-          <td className="px-6 py-4 font-bold text-gray-900 whitespace-nowrap hover:text-[#8B0000] cursor-pointer" onClick={() => handleOpenViewModal(item)}>{item.name}</td>
-          <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{item.agency}</td>
-          <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{item.phone}</td>
-          <td className="px-6 py-4 text-gray-900 font-bold whitespace-nowrap">{item.email}</td>
-        </>
-      );
-      case 'company': return (
-        <>
-          <td className="px-6 py-4 font-bold text-gray-900 whitespace-nowrap hover:text-[#8B0000] cursor-pointer" onClick={() => handleOpenViewModal(item)}>{item.name}</td>
-          <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{item.cnpj}</td>
-          <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{item.city} / {item.state}</td>
-          <td className="px-6 py-4 text-gray-500 whitespace-nowrap">{item.phone}</td>
-        </>
-      );
-      default: return null;
-    }
-  };
-
   const renderFormFields = () => {
     switch(type) {
       case 'broker': return (
-        <>
+        <div className="space-y-6">
           <InputField label="Nome do Corretor" value={formData.name} onChange={v => setFormData({...formData, name: v})} />
           <div className="grid grid-cols-2 gap-4">
             <InputField label="CRECI" value={formData.creci} onChange={v => setFormData({...formData, creci: v})} />
@@ -303,7 +208,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
           </div>
           <InputField label="Telefone" value={formData.phone} onChange={v => setFormData({...formData, phone: v})} />
           <InputField label="Email Profissional" type="email" value={formData.email} onChange={v => setFormData({...formData, email: v})} />
-        </>
+        </div>
       );
       case 'client': return (
         <>
@@ -406,45 +311,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
 
           <div className="space-y-4">
             <h4 className="text-[10px] font-black text-[#8B0000] uppercase tracking-[0.4em]">Mídia & Cloud Photos</h4>
-            <div className="flex gap-2">
-              <input 
-                type="text" 
-                placeholder="Cole a URL da imagem aqui..."
-                className="flex-1 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:ring-1 focus:ring-[#8B0000] bg-gray-50 font-bold"
-                value={imgUrlInput}
-                onChange={e => setImgUrlInput(e.target.value)}
-               />
-              <button 
-                type="button" 
-                onClick={handleAddImgUrl}
-                className="bg-[#1F1F1F] text-white px-6 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all"
-              >
-                Incluir
-              </button>
-            </div>
-            
-            <label className="flex items-center justify-center space-x-3 w-full p-6 border-2 border-dashed border-gray-200 rounded-[2rem] hover:bg-gray-50 cursor-pointer transition-colors group">
-              <Upload size={20} className="text-gray-300 group-hover:text-[#8B0000]" />
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest group-hover:text-gray-600">Fazer Upload de Foto Local</span>
-              <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
-            </label>
-
-            {formData.photos && formData.photos.length > 0 && (
-              <div className="grid grid-cols-4 gap-3 mt-4">
-                {formData.photos.map((photo: string, idx: number) => (
-                  <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden border border-gray-100 group shadow-sm">
-                    <img src={photo} alt="" className="w-full h-full object-cover" />
-                    <button 
-                      type="button"
-                      onClick={() => removePhoto(idx)}
-                      className="absolute top-2 right-2 bg-red-600 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X size={12} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+            <PhotoUploader photos={formData.photos || []} onUpdate={photos => setFormData({...formData, photos})} />
           </div>
         </div>
       );
@@ -459,6 +326,72 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
           <InputField label="E-mail Gerência" value={formData.email} onChange={v => setFormData({...formData, email: v})} />
         </>
       );
+      default: return null;
+    }
+  };
+
+  /**
+   * Renders the columns for a data row based on the CRUD type.
+   */
+  const renderRow = (item: any) => {
+    switch(type) {
+      case 'client':
+        return (
+          <>
+            <td className="px-8 py-6 font-bold text-gray-900">{item.name}</td>
+            <td className="px-8 py-6 text-gray-500">{item.taxId}</td>
+            <td className="px-8 py-6 text-gray-500">{item.phone}</td>
+            <td className="px-8 py-6 text-gray-500">{item.email}</td>
+            <td className="px-8 py-6 font-bold text-gray-900">{formatCurrency(item.income || 0)}</td>
+            <td className="px-8 py-6">
+              <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${item.status === 'Ativo' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                {item.status}
+              </span>
+            </td>
+          </>
+        );
+      case 'broker':
+        const { aReceber, recebido } = calculateBrokerStats(item.id);
+        return (
+          <>
+            <td className="px-8 py-6 font-bold text-gray-900">{item.name}</td>
+            <td className="px-8 py-6 text-gray-500">{item.creci}</td>
+            <td className="px-8 py-6 text-gray-500">{item.commissionRate}%</td>
+            <td className="px-8 py-6 text-gray-500">{item.phone}</td>
+            <td className="px-8 py-6 font-bold text-blue-600">{formatCurrency(aReceber)}</td>
+            <td className="px-8 py-6 font-bold text-green-600">{formatCurrency(recebido)}</td>
+          </>
+        );
+      case 'property':
+        return (
+          <>
+            <td className="px-8 py-6 font-bold text-gray-900">{item.title}</td>
+            <td className="px-8 py-6 text-gray-500">{item.type}</td>
+            <td className="px-8 py-6 font-bold text-[#8B0000]">{formatCurrency(item.value || 0)}</td>
+            <td className="px-8 py-6 text-gray-500">{item.neighborhood}, {item.city}/{item.state}</td>
+          </>
+        );
+      case 'bank':
+        return (
+          <>
+            <td className="px-8 py-6">
+              {item.logo ? <img src={item.logo} alt="" className="w-8 h-8 object-contain" /> : <Landmark size={20} className="text-gray-300" />}
+            </td>
+            <td className="px-8 py-6 font-bold text-gray-900">{item.name}</td>
+            <td className="px-8 py-6 text-gray-500">{item.agency}</td>
+            <td className="px-8 py-6 text-gray-500">{item.phone}</td>
+            <td className="px-8 py-6 text-gray-500">{item.email}</td>
+          </>
+        );
+      case 'company':
+        return (
+          <>
+            <td className="px-8 py-6 font-bold text-gray-900">{item.name}</td>
+            <td className="px-8 py-6 text-gray-500">{item.cnpj}</td>
+            <td className="px-8 py-6 text-gray-500">{item.city} / {item.state}</td>
+            <td className="px-8 py-6 text-gray-500">{item.phone}</td>
+          </>
+        );
       default: return null;
     }
   };
@@ -547,6 +480,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
           onClose={() => setIsQuickAddOpen(null)} 
           onSave={(d: any) => handleQuickAdd(isQuickAddOpen, d)} 
           companies={companies}
+          PROPERTY_TYPES={PROPERTY_TYPES}
         />
       )}
 
@@ -750,13 +684,8 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
   );
 };
 
-const QuickAddModal: React.FC<{type: string, onClose: () => void, onSave: (d: any) => void, companies?: ConstructionCompany[]}> = ({type, onClose, onSave, companies}) => {
-  const [data, setData] = useState<any>({
-    type: "Apartamento",
-    photos: [],
-    commissionRate: 0,
-    value: 0
-  });
+// Componente helper para gerenciar as fotos
+const PhotoUploader: React.FC<{ photos: string[]; onUpdate: (photos: string[]) => void }> = ({ photos, onUpdate }) => {
   const [imgUrlInput, setImgUrlInput] = useState('');
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -764,26 +693,72 @@ const QuickAddModal: React.FC<{type: string, onClose: () => void, onSave: (d: an
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        const base64String = reader.result as string;
-        const currentPhotos = data.photos || [];
-        setData({ ...data, photos: [...currentPhotos, base64String] });
+        onUpdate([...photos, reader.result as string]);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleAddImgUrl = () => {
-    if (!imgUrlInput) return;
-    const currentPhotos = data.photos || [];
-    setData({ ...data, photos: [...currentPhotos, imgUrlInput] });
-    setImgUrlInput('');
+  const removePhoto = (idx: number) => {
+    const newPhotos = [...photos];
+    newPhotos.splice(idx, 1);
+    onUpdate(newPhotos);
   };
 
-  const removePhoto = (index: number) => {
-    const currentPhotos = [...(data.photos || [])];
-    currentPhotos.splice(index, 1);
-    setData({ ...data, photos: currentPhotos });
-  };
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        <input 
+          type="text" 
+          placeholder="Cole a URL da imagem aqui..."
+          className="flex-1 border border-gray-200 rounded-xl p-3 text-sm outline-none bg-gray-50 font-bold"
+          value={imgUrlInput}
+          onChange={e => setImgUrlInput(e.target.value)}
+        />
+        <button 
+          type="button" 
+          onClick={() => { if(imgUrlInput) { onUpdate([...photos, imgUrlInput]); setImgUrlInput(''); } }}
+          className="bg-gray-800 text-white px-6 rounded-xl text-[10px] font-black uppercase"
+        >
+          Incluir
+        </button>
+      </div>
+      <label className="flex items-center justify-center space-x-3 w-full p-4 border-2 border-dashed border-gray-200 rounded-2xl hover:bg-gray-50 cursor-pointer transition-colors group">
+        <Upload size={20} className="text-gray-300 group-hover:text-[#8B0000]" />
+        <span className="text-[10px] font-black text-gray-400 uppercase">Upload Local</span>
+        <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
+      </label>
+      <div className="grid grid-cols-4 gap-3">
+        {photos.map((photo, idx) => (
+          <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-gray-100 group shadow-sm">
+            <img src={photo} alt="" className="w-full h-full object-cover" />
+            <button 
+              type="button"
+              onClick={() => removePhoto(idx)}
+              className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100"
+            >
+              <X size={10} />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const QuickAddModal: React.FC<{
+  type: string, 
+  onClose: () => void, 
+  onSave: (d: any) => void, 
+  companies?: ConstructionCompany[],
+  PROPERTY_TYPES: string[]
+}> = ({type, onClose, onSave, companies, PROPERTY_TYPES}) => {
+  const [data, setData] = useState<any>({
+    type: "Apartamento",
+    photos: [],
+    commissionRate: 0,
+    value: 0
+  });
   
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
@@ -791,43 +766,48 @@ const QuickAddModal: React.FC<{type: string, onClose: () => void, onSave: (d: an
         <div className="bg-[#1F1F1F] px-8 py-6 flex items-center justify-between text-white shrink-0 sticky top-0 z-10">
           <div>
              <h3 className="font-black uppercase tracking-widest text-xs">Acesso Rápido Cloud</h3>
-             <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Inclusão Direta em {type}</p>
+             <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Inclusão em {type}</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={20} /></button>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-8 scrollbar-hide">
-          <form onSubmit={e => { e.preventDefault(); onSave(data); }} className="space-y-6">
+        <div className="flex-1 overflow-y-auto p-8">
+          <form onSubmit={e => { e.preventDefault(); onSave(data); }} className="space-y-8">
             {type === 'company' && (
-              <>
+              <div className="space-y-6">
                 <InputField label="Razão Social" value={data.name} onChange={v => setData({...data, name: v})} />
                 <InputField label="CNPJ" value={data.cnpj} onChange={v => setData({...data, cnpj: v})} />
-                <InputField label="Município de Operação" value={data.city} onChange={v => setData({...data, city: v})} />
-              </>
+                <div className="grid grid-cols-2 gap-4">
+                  <InputField label="Município" value={data.city} onChange={v => setData({...data, city: v})} />
+                  <InputField label="UF" value={data.state} onChange={v => setData({...data, state: v})} />
+                </div>
+              </div>
             )}
             
             {type === 'property' && (
               <div className="space-y-8">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-black text-[#8B0000] uppercase tracking-[0.4em]">Especificação</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tipo</label>
+                      <select 
+                        className="w-full border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900 font-bold" 
+                        value={data.type} 
+                        onChange={e => setData({...data, type: e.target.value})}
+                      >
+                        {PROPERTY_TYPES.map(pt => <option key={pt} value={pt}>{pt}</option>)}
+                      </select>
+                    </div>
+                    <InputField label="Valor Venda (R$)" type="number" value={data.value} onChange={v => setData({...data, value: Number(v)})} />
+                  </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tipo de Imóvel</label>
-                    <select 
-                      className="w-full border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900 font-bold" 
-                      value={data.type} 
-                      onChange={e => setData({...data, type: e.target.value})}
-                    >
-                      {PROPERTY_TYPES.map(pt => <option key={pt} value={pt}>{pt}</option>)}
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Construtora</label>
+                    <select className="w-full border border-gray-200 rounded-xl p-3 text-sm bg-white font-bold outline-none" value={data.constructionCompanyId} onChange={e => setData({...data, constructionCompanyId: e.target.value})}>
+                      <option value="">Selecione...</option>
+                      {companies?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                   </div>
-                  <InputField label="Valor Venda (R$)" type="number" value={data.value} onChange={v => setData({...data, value: Number(v)})} />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Incorporadora Titular</label>
-                  <select className="w-full border border-gray-200 rounded-xl p-3 text-sm bg-white font-bold outline-none" value={data.constructionCompanyId} onChange={e => setData({...data, constructionCompanyId: e.target.value})}>
-                    <option value="">Selecione...</option>
-                    {companies?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
                 </div>
 
                 <div className="space-y-4">
@@ -841,52 +821,28 @@ const QuickAddModal: React.FC<{type: string, onClose: () => void, onSave: (d: an
                 </div>
 
                 <div className="space-y-4">
-                  <h4 className="text-[10px] font-black text-[#8B0000] uppercase tracking-[0.4em]">Galeria de Fotos</h4>
-                  <div className="flex gap-2">
-                    <input 
-                      type="text" 
-                      placeholder="Cole a URL da imagem..."
-                      className="flex-1 border border-gray-200 rounded-xl p-3 text-sm outline-none bg-gray-50 font-bold"
-                      value={imgUrlInput}
-                      onChange={e => setImgUrlInput(e.target.value)}
-                    />
-                    <button type="button" onClick={handleAddImgUrl} className="bg-gray-800 text-white px-4 rounded-xl text-[10px] font-black uppercase">Incluir</button>
-                  </div>
-                  <label className="flex items-center justify-center space-x-3 w-full p-4 border-2 border-dashed border-gray-200 rounded-2xl hover:bg-gray-50 cursor-pointer group transition-colors">
-                    <Upload size={18} className="text-gray-300 group-hover:text-[#8B0000]" />
-                    <span className="text-[10px] font-black text-gray-400 uppercase">Fazer Upload Local</span>
-                    <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
-                  </label>
-                  {data.photos && data.photos.length > 0 && (
-                    <div className="grid grid-cols-4 gap-2">
-                      {data.photos.map((photo: string, idx: number) => (
-                        <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-gray-100 shadow-sm group">
-                          <img src={photo} alt="" className="w-full h-full object-cover" />
-                          <button type="button" onClick={() => removePhoto(idx)} className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100"><X size={10} /></button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <h4 className="text-[10px] font-black text-[#8B0000] uppercase tracking-[0.4em]">Mídia</h4>
+                  <PhotoUploader photos={data.photos || []} onUpdate={photos => setData({...data, photos})} />
                 </div>
               </div>
             )}
             
             {type === 'broker' && (
-              <div className="space-y-4">
-                <InputField label="Nome Completo do Corretor" value={data.name} onChange={v => setData({...data, name: v})} />
+              <div className="space-y-6">
+                <InputField label="Nome Corretor" value={data.name} onChange={v => setData({...data, name: v})} />
                 <div className="grid grid-cols-2 gap-4">
-                  <InputField label="CRECI Profissional" value={data.creci} onChange={v => setData({...data, creci: v})} />
-                  <InputField label="Taxa de Comissão (%)" type="number" step="0.1" value={data.commissionRate} onChange={v => setData({...data, commissionRate: Number(v)})} />
+                  <InputField label="CRECI" value={data.creci} onChange={v => setData({...data, creci: v})} />
+                  <InputField label="Comissão (%)" type="number" step="0.1" value={data.commissionRate} onChange={v => setData({...data, commissionRate: Number(v)})} />
                 </div>
-                <InputField label="Telefone de Contato" value={data.phone} onChange={v => setData({...data, phone: v})} />
-                <InputField label="E-mail Profissional" type="email" value={data.email} onChange={v => setData({...data, email: v})} />
+                <InputField label="Telefone" value={data.phone} onChange={v => setData({...data, phone: v})} />
+                <InputField label="Email" type="email" value={data.email} onChange={v => setData({...data, email: v})} />
               </div>
             )}
             
             {type === 'bank' && (
               <>
                 <InputField label="Nome Instituição" value={data.name} onChange={v => setData({...data, name: v})} />
-                <InputField label="Código Agência" value={data.agency} onChange={v => setData({...data, agency: v})} />
+                <InputField label="Agência" value={data.agency} onChange={v => setData({...data, agency: v})} />
                 <InputField label="E-mail Gerência" value={data.email} onChange={v => setData({...data, email: v})} />
               </>
             )}
@@ -899,7 +855,7 @@ const QuickAddModal: React.FC<{type: string, onClose: () => void, onSave: (d: an
             onClick={() => onSave(data)}
             className="w-full py-4 bg-[#8B0000] text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl hover:bg-[#6b0000] transition-all"
            >
-              Finalizar e Sincronizar Cadastro
+              Salvar Cadastro Completo
            </button>
         </div>
       </div>
