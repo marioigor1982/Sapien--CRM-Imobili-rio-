@@ -44,10 +44,10 @@ const Mural: React.FC<MuralProps> = ({ messages, user, onInteraction }) => {
 
   const handleFileUpload = async (files: File[]): Promise<string | null> => {
     if (files.length === 0) return null;
-    const file = files[0]; // Pegamos o primeiro para o campo 'arquivo' simplificado do script
+    const file = files[0];
 
     if (file.size > 2 * 1024 * 1024) {
-      alert('Limite de 2MB excedido');
+      alert('O arquivo excede o limite de 2MB do Sapien Cloud.');
       return null;
     }
 
@@ -56,7 +56,7 @@ const Mural: React.FC<MuralProps> = ({ messages, user, onInteraction }) => {
       const snapshot = await uploadBytes(fileRef, file);
       return await getDownloadURL(snapshot.ref);
     } catch (e) {
-      console.error("Erro no upload:", e);
+      console.error("Erro no upload para o Storage:", e);
       return null;
     }
   };
@@ -82,21 +82,21 @@ const Mural: React.FC<MuralProps> = ({ messages, user, onInteraction }) => {
         timestamp_ultima_interacao: serverTimestamp(),
         isSeenGlobal: false,
         arquivos: arquivoUrl ? [{ nome: selectedFiles[0].name, url: arquivoUrl, tipo: selectedFiles[0].type }] : [],
-        interacoes: [] // Inicializa array vazio
+        interacoes: [] 
       });
 
       setTitulo(''); setContent(''); setStatus(MuralStatus.EXECUTAR);
       setImportante(false); setSelectedFiles([]); setIsFormOpen(false);
     } catch (err) {
-      console.error(err);
-      alert("Falha ao gravar no Cloud.");
+      console.error("Erro ao criar tópico:", err);
+      alert("Erro crítico ao gravar tópico. Verifique o console.");
     } finally {
       setUploading(null);
     }
   };
 
   const handleReply = async (msgId: string) => {
-    const textoMensagem = replyText[msgId];
+    const textoMensagem = replyText[msgId]?.trim();
     if (!textoMensagem && selectedFiles.length === 0) return;
     
     setUploading(msgId);
@@ -105,38 +105,57 @@ const Mural: React.FC<MuralProps> = ({ messages, user, onInteraction }) => {
     try {
       const arquivoUrl = await handleFileUpload(selectedFiles);
       
-      // SCRIPT TÉCNICO DE RESPOSTA (IGUAL AO SOLICITADO)
-      const novaInteracao = {
+      const novaInteracao: MuralReply = {
         autor: user.email,
-        texto: textoMensagem || "Anexo enviado",
-        arquivo: arquivoUrl, // URL do Firebase Storage (se houver)
+        texto: textoMensagem || "Anexo enviado via Sapien Cloud",
         timestamp: new Date().toISOString()
       };
+      
+      if (arquivoUrl) {
+        novaInteracao.arquivo = arquivoUrl;
+      }
 
       const refTopico = doc(db, "mural", msgId);
       
-      // PERSISTÊNCIA VIA arrayUnion
+      // PERSISTÊNCIA ROBUSTA
       await updateDoc(refTopico, {
         interacoes: arrayUnion(novaInteracao),
-        timestamp_ultima_interacao: serverTimestamp(), // Sobe o tópico para o topo
+        timestamp_ultima_interacao: serverTimestamp(),
         isSeenGlobal: false 
       });
 
-      setReplyText(prev => ({ ...prev, [msgId]: '' }));
+      // Limpa apenas o campo deste tópico específico
+      setReplyText(prev => {
+        const newState = { ...prev };
+        delete newState[msgId];
+        return newState;
+      });
       setSelectedFiles([]);
-      console.log("Interação acumulada com sucesso!");
-    } catch (e) {
-      console.error("Erro ao acumular resposta:", e);
-      alert("Erro ao enviar interação. Verifique se o tópico ainda existe.");
+      
+    } catch (e: any) {
+      console.error("Erro detalhado na gravação:", e);
+      let erroMsg = "Falha ao gravar interação.";
+      
+      if (e.code === 'permission-denied') {
+        erroMsg = "Acesso Negado: As regras do seu Firebase não permitem que você edite este tópico. Verifique se o banco está em 'Modo Teste' ou com permissões abertas para 'update'.";
+      } else if (e.code === 'not-found') {
+        erroMsg = "Tópico não encontrado: Ele pode ter sido excluído por outro operador.";
+      }
+      
+      alert(erroMsg);
     } finally {
       setUploading(null);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm("Deseja remover este tópico?")) {
-      await deleteDoc(doc(db, "mural", id));
-      onInteraction?.();
+    if (confirm("Deseja remover este tópico permanentemente do Cloud?")) {
+      try {
+        await deleteDoc(doc(db, "mural", id));
+        onInteraction?.();
+      } catch (e) {
+        alert("Você não tem permissão para excluir este tópico.");
+      }
     }
   };
 
@@ -170,7 +189,7 @@ const Mural: React.FC<MuralProps> = ({ messages, user, onInteraction }) => {
                     </select>
                   </div>
                 </div>
-                <textarea placeholder="Descrição..." className="w-full border-slate-200 rounded-2xl py-4 px-4 text-sm font-medium h-32 focus:ring-2 focus:ring-red-100 outline-none resize-none" value={content} onChange={e => setContent(e.target.value)} required />
+                <textarea placeholder="Descrição detalhada..." className="w-full border-slate-200 rounded-2xl py-4 px-4 text-sm font-medium h-32 focus:ring-2 focus:ring-red-100 outline-none resize-none" value={content} onChange={e => setContent(e.target.value)} required />
                 <div className="flex items-center justify-between pt-2">
                    <button type="button" onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 text-slate-500 hover:text-[#ea2a33] transition-colors">
                       <Paperclip size={18} />
@@ -178,10 +197,10 @@ const Mural: React.FC<MuralProps> = ({ messages, user, onInteraction }) => {
                       <input type="file" ref={fileInputRef} className="hidden" onChange={e => setSelectedFiles(Array.from(e.target.files || []))} />
                    </button>
                    <button type="submit" disabled={!!uploading} className="bg-[#ea2a33] text-white px-10 py-3.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-xl disabled:opacity-50">
-                      {uploading === 'main' ? 'Processando...' : 'Enviar'}
+                      {uploading === 'main' ? 'Processando...' : 'Publicar'}
                    </button>
                 </div>
-                {selectedFiles.length > 0 && <p className="text-[10px] font-bold text-emerald-600">Arquivo: {selectedFiles[0].name}</p>}
+                {selectedFiles.length > 0 && <p className="text-[10px] font-bold text-emerald-600">Arquivo pendente: {selectedFiles[0].name}</p>}
               </form>
             </div>
           )}
@@ -217,6 +236,17 @@ const Mural: React.FC<MuralProps> = ({ messages, user, onInteraction }) => {
                       )}
                     </div>
                     <div className="bg-slate-50 rounded-2xl p-5 text-slate-700 text-sm mb-4">{msg.content}</div>
+                    
+                    {msg.arquivos && msg.arquivos.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {msg.arquivos.map((f, i) => (
+                          <a key={i} href={f.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 bg-gray-50 border border-gray-100 px-3 py-1.5 rounded-xl text-[10px] font-bold text-gray-500 hover:text-[#ea2a33]">
+                            <FileText size={14} /> {f.nome}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+
                     <div className="flex items-center justify-between pt-2 border-t border-slate-50">
                       <button onClick={() => setExpandedId(isExpanded ? null : msg.id)} className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-[#ea2a33]">
                         <Send size={14} className="rotate-45" /> {msg.interacoes?.length || 0} Interações
@@ -227,7 +257,6 @@ const Mural: React.FC<MuralProps> = ({ messages, user, onInteraction }) => {
                   {isExpanded && (
                     <div className="bg-slate-50/50 border-t border-slate-100 p-6 space-y-4">
                       <div className="space-y-3">
-                        {/* LOOP .MAP() PARA EXIBIR TODAS AS INTERAÇÕES */}
                         {msg.interacoes?.map((res, idx) => (
                           <div key={idx} className="flex gap-3 animate-in slide-in-from-left-2">
                             <div className="h-8 w-8 rounded-xl bg-white border border-slate-200 text-slate-900 flex items-center justify-center text-[10px] font-black shrink-0 uppercase">
@@ -260,7 +289,7 @@ const Mural: React.FC<MuralProps> = ({ messages, user, onInteraction }) => {
                             onChange={e => setReplyText({ ...replyText, [msg.id]: e.target.value })}
                           />
                           <div className="absolute right-3 bottom-3 flex items-center gap-2">
-                            <button onClick={() => replyFileInputRef.current?.click()} className="p-2 text-slate-400 hover:text-[#ea2a33]" title="Anexar">
+                            <button onClick={() => { replyFileInputRef.current?.click() }} className="p-2 text-slate-400 hover:text-[#ea2a33]" title="Anexar">
                               <Paperclip size={20} />
                               <input type="file" ref={replyFileInputRef} className="hidden" onChange={e => setSelectedFiles(Array.from(e.target.files || []))} />
                             </button>
