@@ -19,6 +19,7 @@ import {
   clientService, brokerService, propertyService, 
   bankService, companyService, leadService 
 } from './dataService';
+import { CheckCircle2, X } from 'lucide-react';
 
 const ADMIN_EMAILS = ['mario.igor1982@gmail.com', 'michael.hugo1985@hotmail.com'];
 
@@ -28,6 +29,7 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentView, setCurrentView] = useState<ViewType>('Dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [notification, setNotification] = useState<string | null>(null);
   
   const [leads, setLeads] = useState<Lead[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -42,10 +44,14 @@ const App: React.FC = () => {
   const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);
   const inactivityTimer = useRef<any>(null);
 
+  const showNotification = (msg: string) => {
+    setNotification(msg);
+    setTimeout(() => setNotification(null), 3500);
+  };
+
   const resetInactivityTimer = () => {
     if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
     if (isAuthenticated) {
-      // 10 minutos de timeout
       inactivityTimer.current = setTimeout(() => { handleLogout(); }, 10 * 60 * 1000); 
     }
   };
@@ -100,7 +106,6 @@ const App: React.FC = () => {
     signOut(auth).then(() => {
       localStorage.clear();
       sessionStorage.clear();
-      // Força recarregamento completo para limpar o estado do React e Recharts
       window.location.href = '/'; 
     }).catch(err => console.error("Erro no logout:", err));
   };
@@ -111,7 +116,10 @@ const App: React.FC = () => {
     const currentIdx = PHASES_ORDER.indexOf(lead.currentPhase);
     const nextIdx = PHASES_ORDER.indexOf(newPhase);
 
-    if (!isAdmin && nextIdx < currentIdx) {
+    // Se for um avanço
+    const isAdvancing = nextIdx > currentIdx;
+
+    if (!isAdmin && !isAdvancing) {
       await addDoc(collection(db, "approval_requests"), {
         type: 'regress',
         userId: user?.uid,
@@ -128,6 +136,11 @@ const App: React.FC = () => {
 
     const updatedHistory = [...(lead.history || []), { phase: newPhase, date: new Date().toISOString() }];
     await leadService.update(leadId, { ...lead, currentPhase: newPhase, history: updatedHistory });
+    
+    // Alerta de sucesso apenas se for um avanço
+    if (isAdvancing) {
+      showNotification('Lead Avançado com sucesso!');
+    }
   };
 
   const handleApprove = async (request: ApprovalRequest, status: 'approved' | 'denied') => {
@@ -161,7 +174,7 @@ const App: React.FC = () => {
         isCollapsed={!isSidebarOpen} 
         setIsCollapsed={(v) => setIsSidebarOpen(!v)} 
       />
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 relative">
         <Header 
           title={currentView} 
           onLogout={handleLogout} 
@@ -186,6 +199,27 @@ const App: React.FC = () => {
             {currentView === 'Construtoras' && <GenericCrud title="Construtoras" data={companies} type="company" onSave={d => d.id ? companyService.update(d.id, d) : companyService.create(d)} onDelete={companyService.remove} isAdmin={isAdmin} />}
           </div>
         </main>
+
+        {/* Alerta de Sucesso (Toast) */}
+        {notification && (
+          <div className="fixed bottom-8 right-8 z-[100] animate-in slide-in-from-right-10 duration-500">
+            <div className="bg-[#1F1F1F] text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center space-x-4 border-l-4 border-emerald-500">
+              <div className="bg-emerald-500/10 p-2 rounded-xl text-emerald-500">
+                <CheckCircle2 size={24} />
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 leading-none mb-1">Operação Realizada</p>
+                <p className="text-sm font-bold text-white leading-none">{notification}</p>
+              </div>
+              <button 
+                onClick={() => setNotification(null)}
+                className="ml-4 p-1 hover:bg-white/10 rounded-full transition-colors text-gray-500"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
