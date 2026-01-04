@@ -18,7 +18,7 @@ import {
   clientService, brokerService, propertyService, 
   bankService, companyService, leadService 
 } from './dataService';
-import { X, ShieldAlert, CheckCircle2, Users, History, Lock, ShieldCheck, MessageSquare } from 'lucide-react';
+import { X, ShieldAlert, CheckCircle2, Users, History, Lock, ShieldCheck, MessageSquare, AlertTriangle } from 'lucide-react';
 
 const ADMIN_EMAILS = ['mario.igor1982@gmail.com', 'michael.hugo1985@hotmail.com'];
 
@@ -41,12 +41,12 @@ const App: React.FC = () => {
   const [companies, setCompanies] = useState<ConstructionCompany[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [pendingApprovals, setPendingApprovals] = useState<ApprovalRequest[]>([]);
+  const [deniedRequests, setDeniedRequests] = useState<ApprovalRequest[]>([]);
   const [loginLogs, setLoginLogs] = useState<any[]>([]);
 
   const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);
   const inactivityTimer = useRef<any>(null);
 
-  // Monitor de Inatividade (10 min)
   useEffect(() => {
     if (!isAuthenticated) return;
     const resetTimer = () => {
@@ -91,15 +91,20 @@ const App: React.FC = () => {
     const unsubCompanies = companyService.subscribe(setCompanies);
     const unsubLeads = leadService.subscribe(setLeads);
 
-    let unsubApprovals = () => {};
-    let unsubLogs = () => {};
-    
-    if (isAdmin) {
-      const qApprovals = query(collection(db, "approval_requests"), where("status", "==", "pending"));
-      unsubApprovals = onSnapshot(qApprovals, (snap) => {
-        setPendingApprovals(snap.docs.map(d => ({ id: d.id, ...d.data() } as ApprovalRequest)));
-      });
+    // Listener para aprovações pendentes (Admin)
+    const qApprovals = query(collection(db, "approval_requests"), where("status", "==", "pending"));
+    const unsubApprovals = onSnapshot(qApprovals, (snap) => {
+      setPendingApprovals(snap.docs.map(d => ({ id: d.id, ...d.data() } as ApprovalRequest)));
+    });
 
+    // Listener para requisições negadas (Usuário comum vê no lead)
+    const qDenied = query(collection(db, "approval_requests"), where("status", "==", "denied"));
+    const unsubDenied = onSnapshot(qDenied, (snap) => {
+      setDeniedRequests(snap.docs.map(d => ({ id: d.id, ...d.data() } as ApprovalRequest)));
+    });
+
+    let unsubLogs = () => {};
+    if (isAdmin) {
       const qLogs = query(collection(db, "login_logs"), orderBy("timestamp", "desc"), limit(10));
       unsubLogs = onSnapshot(qLogs, (snap) => {
         setLoginLogs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
@@ -109,7 +114,7 @@ const App: React.FC = () => {
     return () => {
       unsubClients(); unsubBrokers(); unsubProps();
       unsubBanks(); unsubCompanies(); unsubLeads();
-      unsubApprovals(); unsubLogs();
+      unsubApprovals(); unsubDenied(); unsubLogs();
     };
   }, [isAuthenticated, isAdmin]);
 
@@ -120,7 +125,6 @@ const App: React.FC = () => {
     const currentIdx = PHASES_ORDER.indexOf(lead.currentPhase);
     const nextIdx = PHASES_ORDER.indexOf(newPhase);
 
-    // Bloqueio de Retrocesso
     if (!isAdmin && nextIdx < currentIdx) {
       await addDoc(collection(db, "approval_requests"), {
         type: 'regress',
@@ -131,11 +135,10 @@ const App: React.FC = () => {
         status: 'pending',
         createdAt: new Date().toISOString()
       });
-      alert("Ação Restrita: Solicitação de retrocesso enviada ao Sino do ADM.");
+      alert("Ação Restrita: Solicitação de retrocesso enviada para o administrador.");
       return;
     }
 
-    // Avanço é livre
     const updatedHistory = [...(lead.history || []), { phase: newPhase, date: new Date().toISOString() }];
     await leadService.update(leadId, { ...lead, currentPhase: newPhase, history: updatedHistory });
     alert("Lead Avançado com sucesso!");
@@ -143,7 +146,6 @@ const App: React.FC = () => {
 
   const handleDeleteLead = async (id: string) => {
     if (!isAdmin) {
-      // Apenas sinaliza
       await addDoc(collection(db, "approval_requests"), {
         type: 'delete',
         userId: user?.uid,
@@ -152,11 +154,10 @@ const App: React.FC = () => {
         status: 'pending',
         createdAt: new Date().toISOString()
       });
-      alert("Ação Restrita: Pedido de exclusão enviado para aprovação Admin.");
+      alert("Ação Restrita: Pedido de exclusão enviado para o administrador.");
       return;
     }
 
-    // Admin deleta fisicamente
     if (confirm('Deseja realmente excluir este lead permanentemente?')) {
       await leadService.remove(id);
       setIsLeadViewOpen(false);
@@ -165,9 +166,9 @@ const App: React.FC = () => {
   };
 
   const handleApprove = async (request: ApprovalRequest, status: 'approved' | 'denied') => {
-    // 1. Ação Física executada pelo Admin
-    if (status === 'approved') {
-      try {
+    try {
+      // 1. Processar a ação física antes de mudar o status da pendência (Garante execução)
+      if (status === 'approved') {
         if (request.type === 'delete') {
           await leadService.remove(request.leadId);
         } else if (request.type === 'regress' && request.targetPhase) {
@@ -185,19 +186,21 @@ const App: React.FC = () => {
             });
           }
         }
-        alert("Ação Processada com Sucesso.");
-      } catch (err) {
-        alert("Erro ao processar ação no banco de dados.");
       }
-    }
 
-    // 2. Limpeza de Interface e Banco
-    await updateDoc(doc(db, "approval_requests", request.id), { status });
-    
-    // 3. Forçar fechamento de modais de detalhes se o lead foi deletado/alterado
-    if (viewingLead?.id === request.leadId) {
-      setIsLeadViewOpen(false);
-      setViewingLead(null);
+      // 2. Atualizar o status da pendência no banco (Isso remove do onSnapshot 'pending')
+      await updateDoc(doc(db, "approval_requests", request.id), { status });
+      
+      // 3. Limpar interface imediatamente
+      if (viewingLead?.id === request.leadId && status === 'approved') {
+        setIsLeadViewOpen(false);
+        setViewingLead(null);
+      }
+      
+      console.log(`Solicitação ${request.id} processada como ${status}`);
+    } catch (err) {
+      console.error("Erro no processamento SAP:", err);
+      alert("Falha ao sincronizar com o banco de dados.");
     }
   };
 
@@ -215,7 +218,7 @@ const App: React.FC = () => {
       case 'Construtoras': return <GenericCrud title="Construtoras" data={companies} type="company" onSave={(d) => d.id ? companyService.update(d.id, d) : companyService.create(d)} onDelete={companyService.remove} isAdmin={isAdmin} />;
       case 'Settings': return isAdmin ? (
         <div className="space-y-8 animate-in fade-in">
-          <h2 className="text-3xl font-black text-gray-900 tracking-tighter">Central de Governança</h2>
+          <h2 className="text-3xl font-black text-gray-900 tracking-tighter">Central de Governança SAP</h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-gray-100">
                <h4 className="text-[10px] font-black uppercase text-[#8B0000] tracking-widest mb-6">Log de Acessos Recentes</h4>
@@ -229,17 +232,21 @@ const App: React.FC = () => {
                </div>
             </div>
             <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-gray-100">
-               <h4 className="text-[10px] font-black uppercase text-[#8B0000] tracking-widest mb-6">Pendências de Aprovação</h4>
+               <h4 className="text-[10px] font-black uppercase text-[#8B0000] tracking-widest mb-6">Aprovação de Pendências</h4>
                <div className="space-y-3">
                   {pendingApprovals.map(req => (
                     <div key={req.id} className="p-4 bg-red-50 rounded-2xl flex justify-between items-center text-xs border border-red-100">
                        <div>
-                          <p className="font-black text-[#8B0000]">{req.type === 'delete' ? 'Exclusão' : 'Retrocesso'}</p>
+                          <p className="font-black text-[#8B0000]">{req.type === 'delete' ? 'Excluir Lead' : 'Retroceder Fase'}</p>
                           <p className="text-[10px] text-gray-400 font-bold">{req.userEmail}</p>
                        </div>
-                       <button onClick={() => handleApprove(req, 'approved')} className="bg-[#8B0000] text-white px-4 py-2 rounded-lg font-black text-[10px]">APROVAR</button>
+                       <div className="flex space-x-2">
+                          <button onClick={() => handleApprove(req, 'approved')} className="bg-[#8B0000] text-white px-4 py-2 rounded-lg font-black text-[10px] shadow-lg">SIM</button>
+                          <button onClick={() => handleApprove(req, 'denied')} className="bg-gray-200 text-gray-600 px-4 py-2 rounded-lg font-black text-[10px]">NÃO</button>
+                       </div>
                     </div>
                   ))}
+                  {pendingApprovals.length === 0 && <p className="text-center text-gray-300 text-xs py-10 font-bold uppercase tracking-widest">Sem solicitações</p>}
                </div>
             </div>
           </div>
@@ -249,7 +256,7 @@ const App: React.FC = () => {
     }
   };
 
-  if (isLoading) return <div className="h-screen flex items-center justify-center bg-gray-50">Carregando Sapien CRM...</div>;
+  if (isLoading) return <div className="h-screen flex items-center justify-center bg-gray-50">Sincronizando Sapien Cloud...</div>;
   if (!isAuthenticated) return <Login onLogin={() => setIsAuthenticated(true)} />;
 
   return (
@@ -267,65 +274,100 @@ const App: React.FC = () => {
       )}
 
       {isLeadViewOpen && viewingLead && (
-        <LeadDetailsModal lead={viewingLead} onClose={() => { setIsLeadViewOpen(false); setViewingLead(null); }} onEdit={() => { setEditingLead(viewingLead); setIsLeadModalOpen(true); setIsLeadViewOpen(false); }} onDelete={() => handleDeleteLead(viewingLead.id)} clients={clients} properties={properties} isAdmin={isAdmin} />
+        <LeadDetailsModal 
+          lead={viewingLead} 
+          onClose={() => { setIsLeadViewOpen(false); setViewingLead(null); }} 
+          onEdit={() => { setEditingLead(viewingLead); setIsLeadModalOpen(true); setIsLeadViewOpen(false); }} 
+          onDelete={() => handleDeleteLead(viewingLead.id)} 
+          clients={clients} 
+          properties={properties} 
+          isAdmin={isAdmin}
+          deniedRequest={deniedRequests.find(r => r.leadId === viewingLead.id)}
+        />
       )}
     </div>
   );
 };
 
+// --- Modals Refatorados ---
+
 const LeadModal: React.FC<any> = ({ lead, onClose, onSave, clients, properties }) => {
   const [data, setData] = useState({ clientId: lead?.clientId || '', propertyId: lead?.propertyId || '', internalMessage: lead?.internalMessage || '', currentPhase: lead?.currentPhase || LeadPhase.ABERTURA_CREDITO });
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden">
+      <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in duration-200">
         <div className="bg-[#8B0000] p-6 flex items-center justify-between text-white font-black uppercase tracking-widest text-xs">
-          <span>{lead ? 'Editar' : 'Novo'} Lead Cloud</span>
+          <span>{lead ? 'Editar' : 'Novo'} Ativo de Lead</span>
           <button onClick={onClose}><X size={24} /></button>
         </div>
         <div className="p-10 space-y-6">
            <div className="space-y-4">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Titular do Processo</label>
               <select className="w-full border p-3.5 rounded-xl font-bold bg-gray-50" value={data.clientId} onChange={e => setData({...data, clientId: e.target.value})}>
-                <option value="">Cliente...</option>
+                <option value="">Selecione o Cliente...</option>
                 {clients.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Imóvel de Interesse</label>
               <select className="w-full border p-3.5 rounded-xl font-bold bg-gray-50" value={data.propertyId} onChange={e => setData({...data, propertyId: e.target.value})}>
-                <option value="">Imóvel...</option>
+                <option value="">Selecione o Imóvel...</option>
                 {properties.map((p: any) => <option key={p.id} value={p.id}>{p.title}</option>)}
               </select>
-              <textarea className="w-full border p-4 rounded-xl font-bold bg-gray-50 h-32" placeholder="Mensagem interna..." value={data.internalMessage} onChange={e => setData({...data, internalMessage: e.target.value})} />
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mensagem Interna SAP</label>
+              <textarea className="w-full border p-4 rounded-xl font-bold bg-gray-50 h-32 focus:ring-2 focus:ring-[#8B0000] outline-none" placeholder="Instruções para o operacional..." value={data.internalMessage} onChange={e => setData({...data, internalMessage: e.target.value})} />
            </div>
-           <button onClick={() => onSave(data)} className="w-full py-4 bg-[#8B0000] text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl">Sincronizar Lead</button>
+           <button onClick={() => onSave(data)} className="w-full py-4 bg-[#8B0000] text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl hover:scale-105 transition-all">Sincronizar no Cloud</button>
         </div>
       </div>
     </div>
   );
 };
 
-const LeadDetailsModal: React.FC<any> = ({ lead, onClose, onEdit, onDelete, clients, properties, isAdmin }) => {
+const LeadDetailsModal: React.FC<any> = ({ lead, onClose, onEdit, onDelete, clients, properties, isAdmin, deniedRequest }) => {
   const client = clients.find((c: any) => c.id === lead.clientId);
   const property = properties.find((p: any) => p.id === lead.propertyId);
+  
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-      <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in">
+      <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in duration-300">
         <div className="p-10 flex justify-between items-start border-b border-gray-50">
           <div>
-             <h4 className="text-[10px] font-black text-[#8B0000] uppercase tracking-widest">Ativo Operacional</h4>
+             <h4 className="text-[10px] font-black text-[#8B0000] uppercase tracking-widest">Dossiê Operacional</h4>
              <h2 className="text-4xl font-black text-gray-900 tracking-tighter">{client?.name}</h2>
           </div>
           <button onClick={onClose} className="p-2 text-gray-300 hover:text-red-600 transition-colors"><X size={32} /></button>
         </div>
+        
         <div className="p-10 space-y-8">
+           {/* ALERTA DE RECUSA PARA USUÁRIO COMUM */}
+           {deniedRequest && (
+             <div className="bg-red-600 text-white p-4 rounded-2xl flex items-center space-x-3 shadow-lg animate-pulse">
+                <AlertTriangle size={20} />
+                <span className="text-xs font-black uppercase tracking-widest">Solicitação de {deniedRequest.type === 'delete' ? 'Exclusão' : 'Retrocesso'} Recusada pelo Administrador</span>
+             </div>
+           )}
+
            <div className="bg-gray-50 p-6 rounded-2xl border-l-8 border-[#8B0000]">
               <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center"><MessageSquare size={14} className="mr-2" /> Comunicação SAP</h4>
-              <p className="text-gray-700 font-bold italic">"{lead.internalMessage || 'Sem observações.'}"</p>
+              <p className="text-gray-700 font-bold italic">"{lead.internalMessage || 'Sem observações adicionais.'}"</p>
            </div>
+           
            <div className="grid grid-cols-2 gap-8">
-              <div><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Imóvel</label><p className="font-black text-lg">{property?.title}</p></div>
-              <div><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Fase Atual</label><p className="font-black text-lg text-[#8B0000] uppercase">{lead.currentPhase}</p></div>
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Imóvel</label>
+                <p className="font-black text-lg text-gray-900 leading-tight">{property?.title}</p>
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Fase Atual</label>
+                <p className="font-black text-lg text-[#8B0000] uppercase">{lead.currentPhase}</p>
+              </div>
            </div>
         </div>
+
         <div className="p-8 border-t border-gray-100 flex justify-end space-x-4">
-          <button onClick={onDelete} className={`px-8 py-3.5 border rounded-2xl font-black text-[10px] uppercase transition-all ${isAdmin ? 'text-red-600 border-red-100 hover:bg-red-50' : 'text-gray-300 border-gray-100'}`}>
+          <button 
+            onClick={onDelete} 
+            className={`px-8 py-3.5 border rounded-2xl font-black text-[10px] uppercase transition-all ${isAdmin ? 'text-red-600 border-red-100 hover:bg-red-50 shadow-sm' : 'text-gray-400 border-gray-200 bg-gray-50 cursor-pointer'}`}
+          >
             {isAdmin ? 'Excluir Agora' : 'Sinalizar Exclusão'}
           </button>
           <button onClick={onEdit} className="px-12 py-3.5 bg-[#8B0000] text-white rounded-2xl font-black text-[10px] uppercase shadow-xl hover:scale-105 transition-all">Editar Ficha</button>
