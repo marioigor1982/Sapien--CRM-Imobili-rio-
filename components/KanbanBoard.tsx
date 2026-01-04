@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Lead, LeadPhase, PHASES_ORDER, Client, Broker, Property } from '../types';
-import { MoreHorizontal, User, MapPin, Plus, GripVertical, Eye, Trash2, Clock } from 'lucide-react';
+import { MapPin, User, Plus, GripVertical, Eye, Trash2, Clock, MessageSquare } from 'lucide-react';
 
 interface KanbanBoardProps {
   leads: Lead[];
@@ -13,200 +13,76 @@ interface KanbanBoardProps {
   onEditLead?: (lead: Lead) => void;
   onViewLead?: (lead: Lead) => void;
   onDeleteLead?: (id: string) => void;
+  isAdmin: boolean;
 }
 
 const KanbanBoard: React.FC<KanbanBoardProps> = ({ 
-  leads, clients, brokers, properties, updatePhase, onAddLead, onEditLead, onViewLead, onDeleteLead 
+  leads, clients, brokers, properties, updatePhase, onAddLead, onViewLead, onDeleteLead, isAdmin 
 }) => {
   const [draggedLeadId, setDraggedLeadId] = useState<string | null>(null);
-  const [activeDropZone, setActiveDropZone] = useState<LeadPhase | null>(null);
-
-  const calculateProcessDays = (lead: Lead) => {
-    const startEntry = lead.history?.find(h => h.phase === LeadPhase.ABERTURA_CREDITO);
-    const startDate = startEntry ? new Date(startEntry.date) : new Date(lead.createdAt);
-    
-    const endEntry = lead.history?.find(h => h.phase === LeadPhase.ASSINATURA_CONTRATO);
-    const endDate = endEntry ? new Date(endEntry.date) : new Date();
-    
-    const diffTime = endDate.getTime() - startDate.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays < 0 ? 0 : diffDays;
-  };
 
   const handleDragStart = (e: React.DragEvent, leadId: string) => {
     setDraggedLeadId(leadId);
     e.dataTransfer.setData('leadId', leadId);
-    e.dataTransfer.effectAllowed = 'move';
-    
-    const target = e.currentTarget as HTMLElement;
-    setTimeout(() => {
-      target.style.opacity = '0.4';
-    }, 0);
-  };
-
-  const handleDragEnd = (e: React.DragEvent) => {
-    const target = e.currentTarget as HTMLElement;
-    target.style.opacity = '1';
-    setDraggedLeadId(null);
-    setActiveDropZone(null);
-  };
-
-  const handleDragOver = (e: React.DragEvent, phase: LeadPhase) => {
-    e.preventDefault();
-    if (activeDropZone !== phase) {
-      setActiveDropZone(phase);
-    }
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    if (
-      e.clientX <= rect.left || e.clientX >= rect.right ||
-      e.clientY <= rect.top || e.clientY >= rect.bottom
-    ) {
-      setActiveDropZone(null);
-    }
   };
 
   const handleDrop = (e: React.DragEvent, targetPhase: LeadPhase) => {
     e.preventDefault();
     const leadId = e.dataTransfer.getData('leadId') || draggedLeadId;
-    if (leadId) {
-      updatePhase(leadId, targetPhase);
-    }
-    setActiveDropZone(null);
+    if (leadId) updatePhase(leadId, targetPhase);
     setDraggedLeadId(null);
   };
 
   return (
     <div className="space-y-6 pb-10">
       <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest">Pipeline de Vendas</h3>
-          <p className="text-[10px] text-gray-400 font-medium">Arraste os cards para mudar de fase</p>
-        </div>
-        <button 
-          onClick={onAddLead}
-          className="flex items-center space-x-2 bg-[#8B0000] text-white px-4 py-2 rounded-lg font-bold text-sm shadow-md hover:bg-[#6b0000] transition-all"
-        >
-          <Plus size={16} />
-          <span>Novo Lead</span>
-        </button>
+        <div><h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Pipeline Digital SAP</h3></div>
+        <button onClick={onAddLead} className="bg-[#8B0000] text-white px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center"><Plus size={16} className="mr-2" /> Novo Lead Cloud</button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {PHASES_ORDER.map((phase, index) => {
+      <div className="flex space-x-6 overflow-x-auto pb-6 scrollbar-hide">
+        {PHASES_ORDER.map((phase) => {
           const phaseLeads = leads.filter(l => l.currentPhase === phase);
-          const progress = Math.round(((index + 1) / PHASES_ORDER.length) * 100);
-          const isOver = activeDropZone === phase;
-
           return (
             <div 
               key={phase} 
-              className={`flex flex-col h-[500px] rounded-xl border-2 transition-all duration-200 overflow-hidden ${
-                isOver 
-                  ? 'bg-[#8B0000]/5 border-[#8B0000] border-dashed shadow-inner' 
-                  : 'bg-gray-50 border-gray-200 shadow-sm'
-              }`}
-              onDragOver={(e) => handleDragOver(e, phase)}
-              onDragLeave={handleDragLeave}
+              className="flex flex-col w-80 shrink-0 bg-gray-50/50 rounded-[2rem] border border-gray-200 overflow-hidden"
+              onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => handleDrop(e, phase)}
             >
-              <div className="p-4 border-b border-gray-200 bg-white">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-bold text-[#1F1F1F] text-[11px] uppercase tracking-wider truncate max-w-[180px]">{phase}</h3>
-                  <span className="bg-[#8B0000] text-white px-2 py-0.5 rounded-full text-[10px] font-bold">
-                    {phaseLeads.length}
-                  </span>
-                </div>
-                <div className="w-full h-1 bg-gray-100 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-[#8B0000] rounded-full transition-all duration-500" 
-                    style={{ width: `${progress}%` }} 
-                  />
-                </div>
+              <div className="p-6 bg-white border-b border-gray-100 flex items-center justify-between">
+                <h4 className="font-black text-[10px] text-gray-900 uppercase tracking-widest">{phase}</h4>
+                <span className="bg-[#8B0000] text-white px-2 py-0.5 rounded-lg text-[10px] font-black">{phaseLeads.length}</span>
               </div>
 
-              <div className="flex-1 p-3 space-y-3 overflow-y-auto scrollbar-hide">
+              <div className="flex-1 p-4 space-y-4 overflow-y-auto max-h-[600px] scrollbar-hide">
                 {phaseLeads.map(lead => {
                   const client = clients.find(c => c.id === lead.clientId);
                   const property = properties.find(p => p.id === lead.propertyId);
-                  const broker = brokers.find(b => b.id === lead.brokerId);
-                  const daysInProcess = calculateProcessDays(lead);
-                  const isCompleted = lead.currentPhase === LeadPhase.ASSINATURA_CONTRATO;
-
                   return (
                     <div 
                       key={lead.id} 
-                      draggable
+                      draggable 
                       onDragStart={(e) => handleDragStart(e, lead.id)}
-                      onDragEnd={handleDragEnd}
                       onClick={() => onViewLead?.(lead)}
-                      className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:border-[#8B0000] hover:shadow-md transition-all cursor-grab active:cursor-grabbing group relative"
+                      className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:border-[#8B0000] transition-all cursor-grab active:cursor-grabbing group"
                     >
-                      <div className="absolute left-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-20 transition-opacity">
-                        <GripVertical size={16} />
+                      <div className="flex justify-between items-start mb-4">
+                         <h5 className="font-black text-sm text-gray-900">{client?.name}</h5>
+                         {lead.internalMessage && <MessageSquare size={14} className="text-[#8B0000] animate-pulse" />}
                       </div>
-
-                      <div className="flex justify-between items-start mb-2 pl-2">
-                        <h4 className="font-bold text-gray-900 text-sm group-hover:text-[#8B0000] transition-colors line-clamp-1">
-                          {client?.name || 'Cliente s/ nome'}
-                        </h4>
-                        <div className="flex items-center space-x-1">
-                          <button 
-                            className="text-gray-300 hover:text-red-600 transition-colors p-1" 
-                            onClick={(e) => { e.stopPropagation(); onDeleteLead?.(lead.id); }}
-                            title="Excluir Lead"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                          <button 
-                            className="text-gray-300 hover:text-[#8B0000] transition-colors p-1" 
-                            onClick={(e) => { e.stopPropagation(); onViewLead?.(lead); }}
-                            title="Ver Detalhes"
-                          >
-                            <Eye size={14} />
-                          </button>
-                        </div>
+                      <div className="space-y-2 mb-4">
+                         <div className="flex items-center text-[10px] text-gray-500 font-bold"><MapPin size={12} className="mr-2 text-red-400" /> {property?.title}</div>
                       </div>
-
-                      <div className="space-y-1.5 mb-3 pl-2">
-                        <div className="flex items-center text-[11px] text-gray-500">
-                          <MapPin size={10} className="mr-1.5 shrink-0 text-red-400" />
-                          <span className="truncate">{property?.title || 'Sem imóvel'}</span>
-                        </div>
-                        <div className="flex items-center text-[11px] text-gray-500">
-                          <User size={10} className="mr-1.5 shrink-0 text-gray-400" />
-                          <span className="truncate">{broker?.name || 'Não atribuído'}</span>
-                        </div>
-                      </div>
-
-                      <div className="pt-2 border-t border-gray-100 flex items-center justify-between pl-2">
-                        <div className="flex flex-col">
-                          <span className="text-[11px] font-bold text-[#8B0000]">
-                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(property?.value || 0)}
-                          </span>
-                          <div className={`flex items-center mt-1 text-[9px] font-black uppercase tracking-tighter ${isCompleted ? 'text-green-600' : 'text-gray-400'}`}>
-                            <Clock size={10} className="mr-1" />
-                            {isCompleted ? `Ciclo: ${daysInProcess} dias` : `${daysInProcess} dias em processo`}
-                          </div>
-                        </div>
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#8B0000]/10 to-[#8B0000]/20 border border-white text-[8px] flex items-center justify-center font-bold text-[#8B0000] shadow-sm uppercase">
-                          {client?.name?.substring(0, 2) || 'LE'}
-                        </div>
+                      <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
+                         <span className="text-[11px] font-black text-[#8B0000]">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(property?.value || 0)}</span>
+                         <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={(e) => { e.stopPropagation(); onDeleteLead?.(lead.id); }} className="p-1.5 text-gray-300 hover:text-red-600"><Trash2 size={14} /></button>
+                         </div>
                       </div>
                     </div>
                   );
                 })}
-                
-                {phaseLeads.length === 0 && (
-                  <div className="h-full flex flex-col items-center justify-center space-y-2 opacity-20 py-10">
-                    <div className="w-12 h-12 rounded-full border-2 border-dashed border-gray-400 flex items-center justify-center">
-                      <Plus size={20} className="text-gray-400" />
-                    </div>
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Arraste aqui</span>
-                  </div>
-                )}
               </div>
             </div>
           );

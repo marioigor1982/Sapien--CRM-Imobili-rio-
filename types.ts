@@ -20,7 +20,7 @@ export const PHASES_ORDER = [
 export interface Client {
   id: string;
   name: string;
-  taxId: string; // CPF/CNPJ
+  taxId: string;
   phone: string;
   email: string;
   income: number;
@@ -37,7 +37,7 @@ export interface Broker {
   creci: string;
   phone: string;
   email: string;
-  commissionRate: number; // Porcentagem de comissão
+  commissionRate: number;
 }
 
 export interface Property {
@@ -88,7 +88,19 @@ export interface Lead {
   constructionCompanyId: string;
   currentPhase: LeadPhase;
   createdAt: string;
-  history: { phase: LeadPhase; date: string }[];
+  internalMessage?: string;
+  history: { phase: LeadPhase; date: string; message?: string }[];
 }
 
-export type ViewType = 'Dashboard' | 'Kanban' | 'List' | 'Clientes' | 'Corretores' | 'Properties' | 'Bancos' | 'Construtoras';
+export interface ApprovalRequest {
+  id: string;
+  type: 'delete' | 'regress';
+  userId: string;
+  userEmail: string;
+  leadId: string;
+  targetPhase?: LeadPhase;
+  status: 'pending' | 'approved' | 'denied';
+  createdAt: string;
+}
+
+export type ViewType = 'Dashboard' | 'Kanban' | 'List' | 'Clientes' | 'Corretores' | 'Properties' | 'Bancos' | 'Construtoras' | 'Settings';
