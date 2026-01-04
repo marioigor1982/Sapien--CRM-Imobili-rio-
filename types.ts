@@ -101,6 +101,21 @@ export interface ApprovalRequest {
   targetPhase?: LeadPhase;
   status: 'pending' | 'approved' | 'denied';
   createdAt: string;
+  isSeen?: boolean;
 }
 
-export type ViewType = 'Dashboard' | 'Kanban' | 'List' | 'Clientes' | 'Corretores' | 'Properties' | 'Bancos' | 'Construtoras' | 'Settings';
+export interface MuralMessage {
+  id: string;
+  subject: string;
+  content: string;
+  authorName: string;
+  authorEmail: string;
+  createdAt: string;
+  replies: {
+    authorName: string;
+    content: string;
+    date: string;
+  }[];
+}
+
+export type ViewType = 'Dashboard' | 'Kanban' | 'List' | 'Clientes' | 'Corretores' | 'Properties' | 'Bancos' | 'Construtoras' | 'Mural' | 'Settings';
