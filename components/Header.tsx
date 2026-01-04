@@ -1,28 +1,29 @@
 
-import React from 'react';
-import { Search, Bell, LogOut, Menu } from 'lucide-react';
+import React, { useState } from 'react';
+import { Search, Bell, LogOut, Menu, ShieldAlert, Check, X, MessageSquare } from 'lucide-react';
+import { ApprovalRequest } from '../types';
 
 interface HeaderProps {
   title: string;
   onLogout: () => void;
   onToggleSidebar: () => void;
   userEmail: string;
+  pendingApprovals: ApprovalRequest[];
+  onApprove: (request: ApprovalRequest, status: 'approved' | 'denied') => void;
+  isAdmin: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ title, onLogout, onToggleSidebar, userEmail }) => {
-  // Lógica para extrair o primeiro nome do e-mail
-  // mario.igor1982@gmail.com -> mario -> Mario
+const Header: React.FC<HeaderProps> = ({ title, onLogout, onToggleSidebar, userEmail, pendingApprovals, onApprove, isAdmin }) => {
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+
   const getUserGreeting = () => {
     if (!userEmail) return 'Administrador';
-    
-    // Pega a parte antes do @ e do primeiro ponto
     const namePart = userEmail.split(/[.@]/)[0];
-    
-    // Capitaliza a primeira letra
     return namePart.charAt(0).toUpperCase() + namePart.slice(1).toLowerCase();
   };
 
   const userName = getUserGreeting();
+  const hasNotifications = isAdmin && pendingApprovals.length > 0;
 
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 shrink-0 shadow-sm z-30 transition-all duration-300">
@@ -49,13 +50,85 @@ const Header: React.FC<HeaderProps> = ({ title, onLogout, onToggleSidebar, userE
       </div>
       
       <div className="flex items-center space-x-3 md:space-x-6">
-        <button className="text-gray-400 hover:text-[#8B0000] transition-colors relative hidden sm:block">
-          <Bell size={20} />
-          <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#8B0000] rounded-full border-2 border-white" />
-        </button>
+        <div className="relative">
+          <button 
+            onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+            className={`p-2 rounded-full transition-colors relative ${isNotificationsOpen ? 'bg-red-50 text-[#8B0000]' : 'text-gray-400 hover:text-[#8B0000]'}`}
+          >
+            <Bell size={20} />
+            {hasNotifications && (
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#8B0000] rounded-full border-2 border-white animate-pulse" />
+            )}
+          </button>
+
+          {/* Notification Dropdown */}
+          {isNotificationsOpen && (
+            <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="p-4 border-b border-gray-50 bg-gray-50/50 flex justify-between items-center">
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Notificações SAP</span>
+                {isAdmin && <span className="bg-[#8B0000] text-white px-2 py-0.5 rounded text-[9px] font-black">{pendingApprovals.length} Pendentes</span>}
+              </div>
+              <div className="max-h-96 overflow-y-auto">
+                {!isAdmin ? (
+                  <div className="p-8 text-center">
+                    <Check className="mx-auto mb-2 text-green-500" size={24} />
+                    <p className="text-[10px] font-black uppercase text-gray-400">Nenhum alerta para você</p>
+                  </div>
+                ) : pendingApprovals.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <Check className="mx-auto mb-2 text-green-500" size={24} />
+                    <p className="text-[10px] font-black uppercase text-gray-400">Sistema em Conformidade</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-50">
+                    {pendingApprovals.map((req) => (
+                      <div key={req.id} className="p-4 hover:bg-gray-50 transition-colors">
+                        <div className="flex items-start space-x-3">
+                          <div className="p-2 bg-red-50 text-[#8B0000] rounded-lg shrink-0">
+                            <ShieldAlert size={16} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[11px] font-bold text-gray-900 leading-tight">
+                              Solicitação de {req.type === 'delete' ? 'Exclusão' : 'Retrocesso'}
+                            </p>
+                            <p className="text-[9px] text-gray-400 font-bold uppercase mt-1 truncate">
+                              Por: {req.userEmail}
+                            </p>
+                            <div className="flex space-x-2 mt-3">
+                              <button 
+                                onClick={() => onApprove(req, 'approved')}
+                                className="flex-1 py-1.5 bg-[#8B0000] text-white rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg"
+                              >
+                                Aprovar
+                              </button>
+                              <button 
+                                onClick={() => onApprove(req, 'denied')}
+                                className="flex-1 py-1.5 bg-gray-100 text-gray-400 rounded-lg text-[9px] font-black uppercase tracking-widest"
+                              >
+                                Negar
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="p-3 bg-gray-50 border-t border-gray-100 text-center">
+                <button 
+                  onClick={() => setIsNotificationsOpen(false)}
+                  className="text-[9px] font-black uppercase text-[#8B0000] tracking-widest"
+                >
+                  Fechar Central
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
         
         <div className="flex items-center space-x-2 md:space-x-3 pl-3 md:pl-6 border-l border-gray-100">
-          <div className="text-right">
+          <div className="text-right hidden sm:block">
             <p className="text-xs md:text-sm font-bold text-gray-900 leading-tight">Olá, {userName}</p>
             <p className="text-[9px] text-gray-400 font-bold lowercase truncate max-w-[100px] md:max-w-[180px] mt-0.5">
               {userEmail}

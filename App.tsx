@@ -169,30 +169,42 @@ const App: React.FC = () => {
   };
 
   const handleApprove = async (request: ApprovalRequest, status: 'approved' | 'denied') => {
-    await updateDoc(doc(db, "approval_requests", request.id), { status });
-    
+    // Ação física executada pelo Admin
     if (status === 'approved') {
-      if (request.type === 'delete') {
-        await leadService.remove(request.leadId);
-      } else if (request.type === 'regress' && request.targetPhase) {
-        const leadSnap = await getDoc(doc(db, "leads", request.leadId));
-        if (leadSnap.exists()) {
-          const lead = leadSnap.data() as Lead;
-          const updatedHistory = [...(lead.history || []), { 
-            phase: request.targetPhase, 
-            date: new Date().toISOString(),
-            message: "Aprovado por ADM"
-          }];
-          await updateDoc(doc(db, "leads", request.leadId), {
-            currentPhase: request.targetPhase,
-            history: updatedHistory
-          });
+      try {
+        if (request.type === 'delete') {
+          await leadService.remove(request.leadId);
+        } else if (request.type === 'regress' && request.targetPhase) {
+          const leadSnap = await getDoc(doc(db, "leads", request.leadId));
+          if (leadSnap.exists()) {
+            const leadData = leadSnap.data() as Lead;
+            const updatedHistory = [...(leadData.history || []), { 
+              phase: request.targetPhase, 
+              date: new Date().toISOString(),
+              message: "Aprovado por ADM"
+            }];
+            await updateDoc(doc(db, "leads", request.leadId), {
+              currentPhase: request.targetPhase,
+              history: updatedHistory
+            });
+          }
         }
+        // Limpa estado do modal caso esteja aberto para o lead aprovado
+        if (viewingLead?.id === request.leadId && request.type === 'delete') {
+          setIsLeadViewOpen(false);
+          setViewingLead(null);
+        }
+        alert("Solicitação SAP Aprovada com Sucesso.");
+      } catch (err) {
+        console.error("Erro ao aprovar:", err);
+        alert("Erro ao processar ação no DB.");
       }
-      alert("Solicitação Aprovada.");
     } else {
       alert("Solicitação Negada.");
     }
+
+    // Finaliza a solicitação no Firestore
+    await updateDoc(doc(db, "approval_requests", request.id), { status });
   };
 
   const handleLogout = () => signOut(auth);
@@ -278,23 +290,31 @@ const App: React.FC = () => {
       <Sidebar currentView={currentView} setView={setCurrentView} onLogout={handleLogout} isAdmin={isAdmin} isCollapsed={!isSidebarOpen} setIsCollapsed={(v) => setIsSidebarOpen(!v)} />
       
       <div className="flex-1 flex flex-col min-w-0 relative">
-        <Header title={currentView} onLogout={handleLogout} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} userEmail={user?.email || ''} />
+        <Header 
+          title={currentView} 
+          onLogout={handleLogout} 
+          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
+          userEmail={user?.email || ''} 
+          pendingApprovals={pendingApprovals}
+          onApprove={handleApprove}
+          isAdmin={isAdmin}
+        />
         <main className="flex-1 overflow-auto p-4 md:p-6">
           <div className="max-w-7xl mx-auto h-full">{renderView()}</div>
         </main>
       </div>
 
-      {/* 2. POP-UP DE APROVAÇÃO EM TEMPO REAL PARA ADM */}
-      {isAdmin && pendingApprovals.length > 0 && (
+      {/* Pop-up persistente apenas para o primeiro da lista no Dashboard para Admins */}
+      {isAdmin && pendingApprovals.length > 0 && currentView === 'Dashboard' && (
         <div className="fixed top-20 right-6 z-[100] w-80 animate-in slide-in-from-right duration-500">
            <div className="bg-[#1F1F1F] text-white p-6 rounded-[2rem] shadow-2xl border-l-8 border-[#8B0000] relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-10"><ShieldAlert size={80} /></div>
-              <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-red-500 mb-2">Solicitação SAP</h4>
+              <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-red-500 mb-2">Solicitação SAP urgente</h4>
               <p className="text-sm font-bold leading-tight mb-6">
-                O usuário <strong>{pendingApprovals[0].userEmail.split('@')[0]}</strong> deseja executar uma ação protegida. Aprova?
+                O usuário <strong>{pendingApprovals[0].userEmail.split('@')[0]}</strong> aguarda autorização para uma ação crítica.
               </p>
               <div className="flex space-x-3">
-                 <button onClick={() => handleApprove(pendingApprovals[0], 'approved')} className="flex-1 bg-[#8B0000] py-3 rounded-xl font-black text-[10px] uppercase">Aprovar Agora</button>
+                 <button onClick={() => handleApprove(pendingApprovals[0], 'approved')} className="flex-1 bg-[#8B0000] py-3 rounded-xl font-black text-[10px] uppercase shadow-lg">Autorizar</button>
                  <button onClick={() => handleApprove(pendingApprovals[0], 'denied')} className="px-4 bg-white/10 py-3 rounded-xl font-black text-[10px] uppercase hover:bg-white/20">Negar</button>
               </div>
            </div>
@@ -330,7 +350,8 @@ const App: React.FC = () => {
   );
 };
 
-// --- Modals com Campo de Mensagem ---
+// ... Rest of the components (LeadModal, LeadDetailsModal) remain the same ...
+// (Including them to ensure full file content as requested)
 
 const LeadModal: React.FC<any> = ({ lead, onClose, onSave, clients, brokers, properties, banks }) => {
   const [data, setData] = useState({
