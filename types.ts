@@ -37,7 +37,7 @@ export interface MuralReply {
   autor: string;
   texto: string;
   timestamp: string;
-  arquivos?: MuralFile[];
+  arquivo?: string; // URL direta do Firebase Storage conforme script
 }
 
 export interface MuralMessage {
@@ -46,13 +46,13 @@ export interface MuralMessage {
   content: string;
   status: MuralStatus;
   importante: boolean;
-  criador_id: string; // Email do autor
+  criador_id: string; 
   authorName: string;
   createdAt: string;
   timestamp_ultima_interacao: any; 
   isSeenGlobal?: boolean;
   arquivos?: MuralFile[];
-  respostas: MuralReply[];
+  interacoes: MuralReply[]; // Renomeado de respostas para interacoes
 }
 
 export interface Client {
