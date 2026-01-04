@@ -28,32 +28,31 @@ export enum MuralStatus {
 }
 
 export interface MuralFile {
-  name: string;
+  nome: string;
   url: string;
-  type: string;
+  tipo: string;
 }
 
 export interface MuralReply {
-  authorName: string;
-  authorEmail: string;
-  content: string;
-  date: string;
-  files?: MuralFile[];
+  autor: string;
+  texto: string;
+  timestamp: string;
+  arquivos?: MuralFile[];
 }
 
 export interface MuralMessage {
   id: string;
-  subject: string;
+  titulo: string;
   content: string;
   status: MuralStatus;
-  important: boolean;
+  importante: boolean;
+  criador_id: string; // Email do autor
   authorName: string;
-  authorEmail: string;
   createdAt: string;
-  updatedAt: string; 
+  timestamp_ultima_interacao: any; 
   isSeenGlobal?: boolean;
-  files?: MuralFile[];
-  replies: MuralReply[];
+  arquivos?: MuralFile[];
+  respostas: MuralReply[];
 }
 
 export interface Client {

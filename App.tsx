@@ -44,6 +44,9 @@ const App: React.FC = () => {
   const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);
   const inactivityTimer = useRef<any>(null);
 
+  // Armazena contagem anterior para detectar novas respostas
+  const prevMuralStats = useRef<{ [key: string]: number }>({});
+
   const showNotification = (msg: string) => {
     setNotification(msg);
     setTimeout(() => setNotification(null), 3500);
@@ -105,9 +108,27 @@ const App: React.FC = () => {
       setProcessedApprovals(snap.docs.map(d => ({ id: d.id, ...d.data() } as ApprovalRequest)));
     });
 
-    // UPDATED: Order by updatedAt desc to keep latest interaction on top
-    const unsubMural = onSnapshot(query(collection(db, "mural"), orderBy("updatedAt", "desc"), limit(50)), (snap) => {
-      setMuralMessages(snap.docs.map(d => ({ id: d.id, ...d.data() } as MuralMessage)));
+    // LÓGICA DE ORDENAÇÃO POR ATIVIDADE (timestamp_ultima_interacao)
+    const unsubMural = onSnapshot(query(collection(db, "mural"), orderBy("timestamp_ultima_interacao", "desc"), limit(50)), (snap) => {
+      const newMessages = snap.docs.map(d => ({ id: d.id, ...d.data() } as MuralMessage));
+      
+      // Detecção de novas respostas para o Alerta Visual do Sino
+      newMessages.forEach(msg => {
+        const currentCount = msg.respostas?.length || 0;
+        const prevCount = prevMuralStats.current[msg.id] || 0;
+        
+        if (currentCount > prevCount) {
+          const lastReply = msg.respostas[msg.respostas.length - 1];
+          // Só notifica se a resposta não for minha
+          if (lastReply && lastReply.autor !== user?.email) {
+            // Dispara um pequeno efeito ou atualiza metadado para o sino
+            console.log(`Nova interação no tópico: ${msg.titulo}`);
+          }
+        }
+        prevMuralStats.current[msg.id] = currentCount;
+      });
+
+      setMuralMessages(newMessages);
     });
 
     return () => {
@@ -115,7 +136,7 @@ const App: React.FC = () => {
       unsubBanks(); unsubCompanies(); unsubLeads();
       unsubPending(); unsubProcessed(); unsubMural();
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user]);
 
   const handleLogout = () => {
     signOut(auth).then(() => {
