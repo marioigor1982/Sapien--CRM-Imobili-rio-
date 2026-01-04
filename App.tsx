@@ -79,7 +79,6 @@ const App: React.FC = () => {
     const unsubCompanies = companyService.subscribe(setCompanies);
     const unsubLeads = leadService.subscribe(setLeads);
 
-    // Notificações em Tempo Real (Sem Looping Pop-up)
     const unsubPending = onSnapshot(query(collection(db, "approval_requests"), where("status", "==", "pending")), (snap) => {
       setPendingApprovals(snap.docs.map(d => ({ id: d.id, ...d.data() } as ApprovalRequest)));
     });
@@ -116,7 +115,7 @@ const App: React.FC = () => {
         isSeen: false,
         createdAt: new Date().toISOString()
       });
-      alert("Pedido de retrocesso gerado no Sino do ADM.");
+      alert("Ação Restrita: Pedido de retrocesso gerado no Sino do ADM.");
       return;
     }
 
@@ -135,7 +134,7 @@ const App: React.FC = () => {
         isSeen: false,
         createdAt: new Date().toISOString()
       });
-      alert("Pedido de exclusão gerado no Sino do ADM.");
+      alert("Ação Restrita: Pedido de exclusão gerado no Sino do ADM.");
       return;
     }
     if (confirm('Deletar permanentemente este Ativo de Lead?')) {
@@ -181,9 +180,6 @@ const App: React.FC = () => {
     }
   };
 
-  if (isLoading) return <div className="h-screen flex items-center justify-center bg-[#F4F6F8]"><div className="w-12 h-12 border-4 border-[#8B0000] border-t-transparent rounded-full animate-spin"></div></div>;
-  if (!isAuthenticated) return <Login onLogin={() => setIsAuthenticated(true)} />;
-
   return (
     <div className="flex h-screen bg-[#F4F6F8] overflow-hidden">
       <Sidebar currentView={currentView} setView={setCurrentView} onLogout={handleLogout} isAdmin={isAdmin} isCollapsed={!isSidebarOpen} setIsCollapsed={(v) => setIsSidebarOpen(!v)} />
@@ -195,6 +191,7 @@ const App: React.FC = () => {
           userEmail={user?.email || ''} 
           pendingApprovals={pendingApprovals} 
           processedRequests={processedApprovals}
+          muralMessages={muralMessages}
           onApprove={handleApprove} 
           isAdmin={isAdmin} 
         />

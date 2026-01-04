@@ -17,6 +17,16 @@ export const PHASES_ORDER = [
   LeadPhase.ASSINATURA_CONTRATO
 ];
 
+export enum MuralStatus {
+  CRITICO = 'Crítico',
+  IMPORTANTE = 'Importante',
+  EXECUTAR = 'Executar',
+  AGUARDANDO = 'Aguardando Retorno',
+  FALAR_CORRETOR = 'Falar com o Corretor',
+  FALAR_BANCO = 'Falar com o Banco',
+  AVANCAR_FASE = 'Favor avançar a fase'
+}
+
 export interface Client {
   id: string;
   name: string;
@@ -108,9 +118,11 @@ export interface MuralMessage {
   id: string;
   subject: string;
   content: string;
+  status: MuralStatus;
   authorName: string;
   authorEmail: string;
   createdAt: string;
+  isSeenGlobal?: boolean;
   replies: {
     authorName: string;
     content: string;
