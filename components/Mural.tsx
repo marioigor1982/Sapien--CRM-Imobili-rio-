@@ -89,13 +89,19 @@ const Mural: React.FC<MuralProps> = ({ messages, user, onInteraction }) => {
       setImportante(false); setSelectedFiles([]); setIsFormOpen(false);
     } catch (err) {
       console.error("Erro ao criar tópico:", err);
-      alert("Erro crítico ao gravar tópico. Verifique o console.");
+      alert("Erro crítico ao gravar tópico no Cloud.");
     } finally {
       setUploading(null);
     }
   };
 
+  // FUNÇÃO RECURSIVA DE INTERAÇÃO (COMO SOLICITADO)
   const handleReply = async (msgId: string) => {
+    if (!msgId) {
+      alert("Erro de referência: ID do tópico não encontrado.");
+      return;
+    }
+
     const textoMensagem = replyText[msgId]?.trim();
     if (!textoMensagem && selectedFiles.length === 0) return;
     
@@ -103,11 +109,13 @@ const Mural: React.FC<MuralProps> = ({ messages, user, onInteraction }) => {
     onInteraction?.();
 
     try {
+      // 1. Upload do anexo se houver
       const arquivoUrl = await handleFileUpload(selectedFiles);
       
+      // 2. Montagem do objeto de interação
       const novaInteracao: MuralReply = {
         autor: user.email,
-        texto: textoMensagem || "Anexo enviado via Sapien Cloud",
+        texto: textoMensagem || "Anexo enviado",
         timestamp: new Date().toISOString()
       };
       
@@ -115,16 +123,17 @@ const Mural: React.FC<MuralProps> = ({ messages, user, onInteraction }) => {
         novaInteracao.arquivo = arquivoUrl;
       }
 
-      const refTopico = doc(db, "mural", msgId);
+      // 3. Referência ao documento no Firestore
+      const docRef = doc(db, "mural", msgId);
       
-      // PERSISTÊNCIA ROBUSTA
-      await updateDoc(refTopico, {
+      // 4. ATUALIZAÇÃO VIA arrayUnion (ACUMULATIVA)
+      await updateDoc(docRef, {
         interacoes: arrayUnion(novaInteracao),
-        timestamp_ultima_interacao: serverTimestamp(),
+        timestamp_ultima_interacao: serverTimestamp(), // Move o tópico para o topo da lista global
         isSeenGlobal: false 
       });
 
-      // Limpa apenas o campo deste tópico específico
+      // 5. Limpeza de estado local
       setReplyText(prev => {
         const newState = { ...prev };
         delete newState[msgId];
@@ -132,17 +141,18 @@ const Mural: React.FC<MuralProps> = ({ messages, user, onInteraction }) => {
       });
       setSelectedFiles([]);
       
+      console.log(`Sucesso: Interação adicionada ao tópico ${msgId}`);
     } catch (e: any) {
-      console.error("Erro detalhado na gravação:", e);
-      let erroMsg = "Falha ao gravar interação.";
+      console.error("Falha na gravação Firestore:", e);
+      let msgErro = "Erro ao enviar interação.";
       
-      if (e.code === 'permission-denied') {
-        erroMsg = "Acesso Negado: As regras do seu Firebase não permitem que você edite este tópico. Verifique se o banco está em 'Modo Teste' ou com permissões abertas para 'update'.";
-      } else if (e.code === 'not-found') {
-        erroMsg = "Tópico não encontrado: Ele pode ter sido excluído por outro operador.";
+      if (e.code === 'not-found') {
+        msgErro = "O tópico selecionado não foi encontrado no banco de dados. Ele pode ter sido excluído.";
+      } else if (e.code === 'permission-denied') {
+        msgErro = "Permissão negada: Suas credenciais não permitem atualizar este tópico no Firebase.";
       }
       
-      alert(erroMsg);
+      alert(msgErro);
     } finally {
       setUploading(null);
     }
