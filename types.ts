@@ -27,6 +27,35 @@ export enum MuralStatus {
   AVANCAR_FASE = 'Favor avançar a fase'
 }
 
+export interface MuralFile {
+  name: string;
+  url: string;
+  type: string;
+}
+
+export interface MuralReply {
+  authorName: string;
+  authorEmail: string;
+  content: string;
+  date: string;
+  files?: MuralFile[];
+}
+
+export interface MuralMessage {
+  id: string;
+  subject: string;
+  content: string;
+  status: MuralStatus;
+  important: boolean;
+  authorName: string;
+  authorEmail: string;
+  createdAt: string;
+  updatedAt: string; 
+  isSeenGlobal?: boolean;
+  files?: MuralFile[];
+  replies: MuralReply[];
+}
+
 export interface Client {
   id: string;
   name: string;
@@ -112,24 +141,6 @@ export interface ApprovalRequest {
   status: 'pending' | 'approved' | 'denied';
   createdAt: string;
   isSeen?: boolean;
-}
-
-export interface MuralMessage {
-  id: string;
-  subject: string;
-  content: string;
-  status: MuralStatus;
-  important: boolean;
-  authorName: string;
-  authorEmail: string;
-  createdAt: string;
-  updatedAt: string; // Used for "latest interaction on top" logic
-  isSeenGlobal?: boolean;
-  replies: {
-    authorName: string;
-    content: string;
-    date: string;
-  }[];
 }
 
 export type ViewType = 'Dashboard' | 'Kanban' | 'List' | 'Clientes' | 'Corretores' | 'Properties' | 'Bancos' | 'Construtoras' | 'Mural' | 'Settings';
