@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { MuralMessage, MuralStatus } from '../types';
 import { 
-  Send, MessageSquare, User, Clock, Plus, Trash2, Mail, 
+  Send, MessageSquare, Clock, Plus, Trash2, Mail, 
   ChevronDown, AlertTriangle, Star, Play, UserSearch, 
   Landmark, ArrowUpRight, Filter, X 
 } from 'lucide-react';
@@ -64,6 +64,7 @@ const Mural: React.FC<MuralProps> = ({ messages, user }) => {
   const [subject, setSubject] = useState('');
   const [content, setContent] = useState('');
   const [status, setStatus] = useState<MuralStatus>(MuralStatus.EXECUTAR);
+  const [important, setImportant] = useState(false);
   const [filter, setFilter] = useState<MuralStatus | 'Todos'>('Todos');
   const [replyText, setReplyText] = useState<{ [key: string]: string }>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -76,6 +77,7 @@ const Mural: React.FC<MuralProps> = ({ messages, user }) => {
       subject,
       content,
       status,
+      important,
       authorName: user.email.split('@')[0],
       authorEmail: user.email,
       createdAt: new Date().toISOString(),
@@ -86,6 +88,7 @@ const Mural: React.FC<MuralProps> = ({ messages, user }) => {
     setSubject('');
     setContent('');
     setStatus(MuralStatus.EXECUTAR);
+    setImportant(false);
     setIsFormOpen(false);
   };
 
@@ -157,13 +160,23 @@ const Mural: React.FC<MuralProps> = ({ messages, user }) => {
               </div>
               <div className="space-y-1.5">
                  <label className="text-[10px] font-black text-[#8B0000] uppercase tracking-widest">Status / Flag SAP</label>
-                 <select 
-                   className="w-full border border-gray-200 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-[#8B0000] outline-none bg-white"
-                   value={status}
-                   onChange={e => setStatus(e.target.value as MuralStatus)}
-                 >
-                    {Object.values(MuralStatus).map(s => <option key={s} value={s}>{s}</option>)}
-                 </select>
+                 <div className="flex gap-4">
+                    <select 
+                      className="flex-1 border border-gray-200 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-[#8B0000] outline-none bg-white"
+                      value={status}
+                      onChange={e => setStatus(e.target.value as MuralStatus)}
+                    >
+                       {Object.values(MuralStatus).map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                    <button 
+                      type="button"
+                      onClick={() => setImportant(!important)}
+                      className={`px-4 rounded-xl flex items-center gap-2 font-black text-[10px] uppercase border transition-all ${important ? 'bg-amber-500 text-white border-amber-600' : 'bg-gray-50 text-gray-400 border-gray-200'}`}
+                    >
+                      <Star size={16} fill={important ? 'currentColor' : 'none'} />
+                      Importante
+                    </button>
+                 </div>
               </div>
             </div>
             <div className="space-y-1.5">
@@ -187,12 +200,13 @@ const Mural: React.FC<MuralProps> = ({ messages, user }) => {
       <div className="space-y-6">
         {filteredMessages.map(msg => {
           const config = STATUS_CONFIG[msg.status] || STATUS_CONFIG[MuralStatus.EXECUTAR];
+          // REGRA DE EXCLUSÃO: Comparar com o autor (criador_id no Firestore é authorEmail aqui)
           const isCreator = user.email === msg.authorEmail;
 
           return (
-            <div key={msg.id} className={`bg-white rounded-[2.5rem] shadow-xl border-2 ${config.border} overflow-hidden group hover:shadow-2xl transition-all relative`}>
-              {msg.status === MuralStatus.CRITICO && (
-                <div className="absolute top-0 left-0 w-full h-1 bg-red-600 animate-pulse" />
+            <div key={msg.id} className={`bg-white rounded-[2.5rem] shadow-xl border-2 ${msg.status === MuralStatus.CRITICO ? 'border-red-500' : config.border} overflow-hidden group hover:shadow-2xl transition-all relative`}>
+              {(msg.status === MuralStatus.CRITICO || msg.important) && (
+                <div className={`absolute top-0 left-0 w-full h-1 ${msg.status === MuralStatus.CRITICO ? 'bg-red-600 animate-pulse' : 'bg-amber-400'}`} />
               )}
               
               <div className="p-8 md:p-10">
@@ -204,16 +218,25 @@ const Mural: React.FC<MuralProps> = ({ messages, user }) => {
                       <div>
                          <div className="flex items-center space-x-3">
                             <h4 className="text-xl font-black text-gray-900 tracking-tighter leading-none">{msg.subject}</h4>
-                            <span className={`flex items-center space-x-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${config.bg} ${config.color} border border-current/20`}>
-                               {config.icon}
-                               <span>{msg.status}</span>
-                            </span>
+                            <div className="flex gap-2">
+                               <span className={`flex items-center space-x-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${config.bg} ${config.color} border border-current/20`}>
+                                  {config.icon}
+                                  <span>{msg.status}</span>
+                               </span>
+                               {msg.important && (
+                                 <span className="flex items-center px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-200">
+                                   <Star size={12} fill="currentColor" className="mr-1" />
+                                   IMPORTANTE
+                                 </span>
+                               )}
+                            </div>
                          </div>
                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Por {msg.authorName} • {new Date(msg.createdAt).toLocaleString()}</p>
                       </div>
                    </div>
+                   {/* SÓ O CRIADOR PODE EXCLUIR */}
                    {isCreator && (
-                     <button onClick={() => handleDelete(msg.id)} className="p-2 text-gray-300 hover:text-red-600 transition-colors"><Trash2 size={18} /></button>
+                     <button onClick={() => handleDelete(msg.id)} className="p-2 text-gray-300 hover:text-red-600 transition-colors" title="Excluir Corrente"><Trash2 size={18} /></button>
                    )}
                 </div>
 

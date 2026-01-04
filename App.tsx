@@ -163,9 +163,18 @@ const App: React.FC = () => {
     } catch (err) { console.error(err); }
   };
 
-  const handleLogout = () => signOut(auth);
+  const handleLogout = () => {
+    signOut(auth).then(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.reload();
+    }).catch(err => console.error("Erro ao sair:", err));
+  };
 
   const renderView = () => {
+    // IMPORTANTE: Garantir que só renderizamos quando autenticado
+    if (!isAuthenticated) return null;
+
     switch (currentView) {
       case 'Dashboard': return <Dashboard leads={leads} clients={clients} properties={properties} brokers={brokers} />;
       case 'Kanban': return <KanbanBoard leads={leads} clients={clients} brokers={brokers} properties={properties} updatePhase={handleUpdateLeadPhase} onAddLead={() => setIsLeadModalOpen(true)} onEditLead={setEditingLead} onViewLead={(l: any) => { setViewingLead(l); setIsLeadViewOpen(true); }} onDeleteLead={handleDeleteLead} isAdmin={isAdmin} />;
@@ -179,6 +188,9 @@ const App: React.FC = () => {
       default: return <Dashboard leads={leads} clients={clients} properties={properties} brokers={brokers} />;
     }
   };
+
+  if (isLoading) return <div className="h-screen flex items-center justify-center bg-[#F4F6F8]"><div className="w-12 h-12 border-4 border-[#8B0000] border-t-transparent rounded-full animate-spin"></div></div>;
+  if (!isAuthenticated) return <Login onLogin={() => setIsAuthenticated(true)} />;
 
   return (
     <div className="flex h-screen bg-[#F4F6F8] overflow-hidden">

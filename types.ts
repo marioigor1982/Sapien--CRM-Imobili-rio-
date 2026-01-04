@@ -119,6 +119,7 @@ export interface MuralMessage {
   subject: string;
   content: string;
   status: MuralStatus;
+  important: boolean;
   authorName: string;
   authorEmail: string;
   createdAt: string;
