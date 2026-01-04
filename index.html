@@ -6,9 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sapien CRM</title>
     <link rel="icon" href="https://i.postimg.cc/5NTGwxd0/LOGO_SISTEMMA.jpg" type="image/jpeg">
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Noto+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries,typography"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=Noto+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
     <script>
         tailwind.config = {
             darkMode: "class",
@@ -16,14 +16,25 @@
                 extend: {
                     colors: {
                         "primary": "#ea2a33",
+                        "primary-dark": "#B71C1C",
                         "background-light": "#f8f6f6",
-                        "background-dark": "#211111",
+                        "background-dark": "#0F172A",
+                        "surface-light": "#FFFFFF",
+                        "surface-dark": "#1E293B",
                     },
                     fontFamily: {
                         "display": ["Space Grotesk", "sans-serif"],
-                        "body": ["Noto Sans", "sans-serif"]
+                        "body": ["Noto Sans", "sans-serif"],
+                        "sans": ["Inter", "sans-serif"]
                     },
-                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "3xl": "1.5rem",
+                        "full": "9999px"
+                    },
                     animation: {
                         'gradient-slow': 'gradient-shift 8s ease infinite',
                         'float': 'float 6s ease-in-out infinite',
@@ -37,6 +48,9 @@
                             '0%, 100%': { transform: 'translateY(0)' },
                             '50%': { transform: 'translateY(-10px)' },
                         }
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
                     }
                 },
             },
@@ -67,14 +81,14 @@
             height: 8px;
         }
         ::-webkit-scrollbar-track {
-            background: #f1f1f1;
+            background: transparent;
         }
         ::-webkit-scrollbar-thumb {
-            background: #c0c0c0;
-            border-radius: 4px;
+            background: #CBD5E1;
+            border-radius: 20px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #8b0000;
+            background: #ea2a33;
         }
     </style>
 <script type="importmap">
@@ -94,7 +108,7 @@
 }
 </script>
 </head>
-<body class="font-display antialiased text-white bg-background-dark overflow-x-hidden">
+<body class="font-sans antialiased text-slate-800 bg-[#F3F4F6] overflow-x-hidden">
     <div id="root"></div>
     <script type="module" src="index.tsx"></script>
 </body>
