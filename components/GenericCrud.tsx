@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { 
   Plus, Edit2, Trash2, Search, X, Image as ImageIcon, 
   Eye, Landmark, Upload, Link as LinkIcon, Building2,
-  Wallet, TrendingUp, Calendar, Filter, Briefcase, MapPin, User, ChevronRight, CheckCircle2, AlertCircle
+  Wallet, TrendingUp, Calendar, Filter, Briefcase, MapPin, User, ChevronRight, CheckCircle2, AlertCircle, Lock
 } from 'lucide-react';
 import { LeadPhase, ConstructionCompany, Lead, Property, Broker, Client, Bank } from '../types';
 
@@ -19,6 +19,7 @@ interface GenericCrudProps {
   clients?: Client[];
   brokers?: Broker[];
   banks?: Bank[];
+  isAdmin: boolean;
   // Services for quick-add modals
   companyService?: any;
   propertyService?: any;
@@ -38,7 +39,7 @@ const PROPERTY_TYPES = [
 const GenericCrud: React.FC<GenericCrudProps> = ({ 
   title, data, type, onSave, onDelete, 
   companies = [], leads = [], properties = [], clients = [], brokers = [], banks = [],
-  companyService, propertyService, brokerService, bankService
+  companyService, propertyService, brokerService, bankService, isAdmin
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -54,6 +55,10 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
   const [brokerDateEnd, setBrokerDateEnd] = useState('');
 
   const handleDelete = async (id: string) => {
+    if (!isAdmin) {
+      alert("Ação Restrita: Apenas Administradores podem excluir registros do sistema.");
+      return;
+    }
     if (confirm(`Deseja realmente excluir este ${title.slice(0,-1).toLowerCase()} permanentemente?`)) {
       if (onDelete) await onDelete(id);
       if (viewingItem?.id === id) setIsViewModalOpen(false);
@@ -330,9 +335,6 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
     }
   };
 
-  /**
-   * Renders the columns for a data row based on the CRUD type.
-   */
   const renderRow = (item: any) => {
     switch(type) {
       case 'client':
@@ -431,7 +433,11 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
                     <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-[-10px]">
                       <button onClick={() => handleOpenViewModal(item)} className="p-2.5 text-gray-400 hover:text-[#8B0000] hover:bg-red-50 rounded-xl transition-all"><Eye size={18} /></button>
                       <button onClick={() => handleOpenModal(item)} className="p-2.5 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"><Edit2 size={18} /></button>
-                      <button onClick={() => handleDelete(item.id)} className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={18} /></button>
+                      {isAdmin ? (
+                        <button onClick={() => handleDelete(item.id)} className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={18} /></button>
+                      ) : (
+                        <div className="p-2.5 text-gray-200 cursor-not-allowed" title="Somente Admin"><Lock size={18} /></div>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -566,7 +572,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
                                <div className="p-8 border border-green-50 rounded-[2.5rem] bg-green-50/30 flex flex-col justify-between">
                                   <div className="flex items-center justify-between mb-8">
                                      <div className="p-4 bg-green-600 text-white rounded-[1.5rem] shadow-lg shadow-green-200"><Wallet size={28} /></div>
-                                     <span className="text-[10px] font-black text-green-700 uppercase bg-green-100 px-3 py-1.5 rounded-full border border-green-200 tracking-widest">Recebido</span>
+                                     <span className="text-[10px] font-black text-green-700 uppercase bg-green-100 px-3 py-1.5 rounded-full border border-blue-200 tracking-widest">Recebido</span>
                                   </div>
                                   <div>
                                      <p className="text-4xl font-black text-green-900 tracking-tighter mb-2">{formatCurrency(recebido)}</p>
@@ -672,7 +678,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
                 <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">Auditoria Sapien Cloud Ativa</p>
                 <button 
                  onClick={() => { setIsViewModalOpen(false); handleOpenModal(viewingItem); }} 
-                 className="px-10 py-4 bg-[#1F1F1F] text-white rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest shadow-2xl hover:bg-black hover:scale-105 transition-all flex items-center"
+                 className="px-10 py-4 bg-[#1F1F1F] text-white rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest shadow-xl hover:bg-black hover:scale-105 transition-all flex items-center"
                 >
                    <Edit2 size={16} className="mr-3" /> Alterar Dados do Registro
                 </button>
