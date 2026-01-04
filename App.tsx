@@ -14,7 +14,7 @@ import GenericCrud from './components/GenericCrud';
 import Mural from './components/Mural';
 import { auth, db } from './firebase';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
-import { collection, onSnapshot, query, where, addDoc, updateDoc, doc, getDoc, orderBy, limit, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, addDoc, updateDoc, doc, getDoc, orderBy, limit, deleteDoc, writeBatch } from 'firebase/firestore';
 import { 
   clientService, brokerService, propertyService, 
   bankService, companyService, leadService 
@@ -55,6 +55,21 @@ const App: React.FC = () => {
       inactivityTimer.current = setTimeout(() => { handleLogout(); }, 10 * 60 * 1000); 
     }
   };
+
+  // Lógica para marcar mensagens do Mural como lidas ao entrar na visualização
+  useEffect(() => {
+    if (currentView === 'Mural' && muralMessages.length > 0) {
+      const unread = muralMessages.filter(m => !m.isSeenGlobal);
+      if (unread.length > 0) {
+        const batch = writeBatch(db);
+        unread.forEach(msg => {
+          const ref = doc(db, "mural", msg.id);
+          batch.update(ref, { isSeenGlobal: true });
+        });
+        batch.commit().catch(err => console.error("Erro ao marcar lidas:", err));
+      }
+    }
+  }, [currentView, muralMessages]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -161,6 +176,8 @@ const App: React.FC = () => {
     } catch (err) { console.error(err); }
   };
 
+  const unreadMuralCount = muralMessages.filter(m => !m.isSeenGlobal).length;
+
   if (isLoading) return <div className="h-screen flex items-center justify-center bg-[#F4F6F8]"><div className="w-10 h-10 border-4 border-[#8B0000] border-t-transparent rounded-full animate-spin"></div></div>;
   if (!isAuthenticated) return <Login onLogin={() => setIsAuthenticated(true)} />;
 
@@ -172,7 +189,8 @@ const App: React.FC = () => {
         onLogout={handleLogout} 
         isAdmin={isAdmin} 
         isCollapsed={!isSidebarOpen} 
-        setIsCollapsed={(v) => setIsSidebarOpen(!v)} 
+        setIsCollapsed={(v) => setIsSidebarOpen(!v)}
+        unreadMuralCount={unreadMuralCount}
       />
       <div className="flex-1 flex flex-col min-w-0 relative">
         <Header 
