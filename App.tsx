@@ -56,7 +56,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Lógica para marcar mensagens do Mural como lidas ao entrar na visualização
   useEffect(() => {
     if (currentView === 'Mural' && muralMessages.length > 0) {
       const unread = muralMessages.filter(m => !m.isSeenGlobal);
@@ -106,7 +105,8 @@ const App: React.FC = () => {
       setProcessedApprovals(snap.docs.map(d => ({ id: d.id, ...d.data() } as ApprovalRequest)));
     });
 
-    const unsubMural = onSnapshot(query(collection(db, "mural"), orderBy("createdAt", "desc"), limit(50)), (snap) => {
+    // UPDATED: Order by updatedAt desc to keep latest interaction on top
+    const unsubMural = onSnapshot(query(collection(db, "mural"), orderBy("updatedAt", "desc"), limit(50)), (snap) => {
       setMuralMessages(snap.docs.map(d => ({ id: d.id, ...d.data() } as MuralMessage)));
     });
 
@@ -131,7 +131,6 @@ const App: React.FC = () => {
     const currentIdx = PHASES_ORDER.indexOf(lead.currentPhase);
     const nextIdx = PHASES_ORDER.indexOf(newPhase);
 
-    // Se for um avanço
     const isAdvancing = nextIdx > currentIdx;
 
     if (!isAdmin && !isAdvancing) {
@@ -152,7 +151,6 @@ const App: React.FC = () => {
     const updatedHistory = [...(lead.history || []), { phase: newPhase, date: new Date().toISOString() }];
     await leadService.update(leadId, { ...lead, currentPhase: newPhase, history: updatedHistory });
     
-    // Alerta de sucesso apenas se for um avanço
     if (isAdvancing) {
       showNotification('Lead Avançado com sucesso!');
     }
@@ -178,11 +176,11 @@ const App: React.FC = () => {
 
   const unreadMuralCount = muralMessages.filter(m => !m.isSeenGlobal).length;
 
-  if (isLoading) return <div className="h-screen flex items-center justify-center bg-[#F4F6F8]"><div className="w-10 h-10 border-4 border-[#8B0000] border-t-transparent rounded-full animate-spin"></div></div>;
+  if (isLoading) return <div className="h-screen flex items-center justify-center bg-[#F4F6F8]"><div className="w-10 h-10 border-4 border-[#ea2a33] border-t-transparent rounded-full animate-spin"></div></div>;
   if (!isAuthenticated) return <Login onLogin={() => setIsAuthenticated(true)} />;
 
   return (
-    <div className="flex h-screen bg-[#F4F6F8] overflow-hidden">
+    <div className="flex h-screen bg-[#F3F4F6] overflow-hidden">
       <Sidebar 
         currentView={currentView} 
         setView={setCurrentView} 
@@ -204,21 +202,20 @@ const App: React.FC = () => {
           onApprove={handleApprove} 
           isAdmin={isAdmin} 
         />
-        <main className="flex-1 overflow-auto p-6 md:p-8">
-          <div className="max-w-7xl mx-auto h-full">
-            {currentView === 'Dashboard' && <Dashboard leads={leads} clients={clients} properties={properties} brokers={brokers} />}
-            {currentView === 'Kanban' && <KanbanBoard leads={leads} clients={clients} brokers={brokers} properties={properties} updatePhase={handleUpdateLeadPhase} isAdmin={isAdmin} onDeleteLead={id => isAdmin ? leadService.remove(id) : alert('Ação restrita')} />}
-            {currentView === 'List' && <LeadTable leads={leads} clients={clients} brokers={brokers} properties={properties} banks={banks} companies={companies} updatePhase={handleUpdateLeadPhase} onAddLead={() => {}} onEditLead={() => {}} onDeleteLead={id => isAdmin ? leadService.remove(id) : alert('Ação restrita')} />}
+        <main className="flex-1 overflow-auto p-0">
+          <div className="w-full h-full">
+            {currentView === 'Dashboard' && <div className="p-8"><Dashboard leads={leads} clients={clients} properties={properties} brokers={brokers} /></div>}
+            {currentView === 'Kanban' && <div className="p-8"><KanbanBoard leads={leads} clients={clients} brokers={brokers} properties={properties} updatePhase={handleUpdateLeadPhase} isAdmin={isAdmin} onDeleteLead={id => isAdmin ? leadService.remove(id) : alert('Ação restrita')} /></div>}
+            {currentView === 'List' && <div className="p-8"><LeadTable leads={leads} clients={clients} brokers={brokers} properties={properties} banks={banks} companies={companies} updatePhase={handleUpdateLeadPhase} onAddLead={() => {}} onEditLead={() => {}} onDeleteLead={id => isAdmin ? leadService.remove(id) : alert('Ação restrita')} /></div>}
             {currentView === 'Mural' && <Mural messages={muralMessages} user={user} onInteraction={resetInactivityTimer} />}
-            {currentView === 'Clientes' && <GenericCrud title="Clientes" data={clients} type="client" onSave={d => d.id ? clientService.update(d.id, d) : clientService.create(d)} onDelete={clientService.remove} isAdmin={isAdmin} />}
-            {currentView === 'Corretores' && <GenericCrud title="Corretores" data={brokers} type="broker" onSave={d => d.id ? brokerService.update(d.id, d) : brokerService.create(d)} onDelete={brokerService.remove} isAdmin={isAdmin} />}
-            {currentView === 'Properties' && <GenericCrud title="Imóveis" data={properties} type="property" onSave={d => d.id ? propertyService.update(d.id, d) : propertyService.create(d)} onDelete={propertyService.remove} isAdmin={isAdmin} />}
-            {currentView === 'Bancos' && <GenericCrud title="Bancos" data={banks} type="bank" onSave={d => d.id ? bankService.update(d.id, d) : bankService.create(d)} onDelete={bankService.remove} isAdmin={isAdmin} />}
-            {currentView === 'Construtoras' && <GenericCrud title="Construtoras" data={companies} type="company" onSave={d => d.id ? companyService.update(d.id, d) : companyService.create(d)} onDelete={companyService.remove} isAdmin={isAdmin} />}
+            {currentView === 'Clientes' && <div className="p-8"><GenericCrud title="Clientes" data={clients} type="client" onSave={d => d.id ? clientService.update(d.id, d) : clientService.create(d)} onDelete={clientService.remove} isAdmin={isAdmin} /></div>}
+            {currentView === 'Corretores' && <div className="p-8"><GenericCrud title="Corretores" data={brokers} type="broker" onSave={d => d.id ? brokerService.update(d.id, d) : brokerService.create(d)} onDelete={brokerService.remove} isAdmin={isAdmin} /></div>}
+            {currentView === 'Properties' && <div className="p-8"><GenericCrud title="Imóveis" data={properties} type="property" onSave={d => d.id ? propertyService.update(d.id, d) : propertyService.create(d)} onDelete={propertyService.remove} isAdmin={isAdmin} /></div>}
+            {currentView === 'Bancos' && <div className="p-8"><GenericCrud title="Bancos" data={banks} type="bank" onSave={d => d.id ? bankService.update(d.id, d) : bankService.create(d)} onDelete={bankService.remove} isAdmin={isAdmin} /></div>}
+            {currentView === 'Construtoras' && <div className="p-8"><GenericCrud title="Construtoras" data={companies} type="company" onSave={d => d.id ? companyService.update(d.id, d) : companyService.create(d)} onDelete={companyService.remove} isAdmin={isAdmin} /></div>}
           </div>
         </main>
 
-        {/* Alerta de Sucesso (Toast) */}
         {notification && (
           <div className="fixed bottom-8 right-8 z-[100] animate-in slide-in-from-right-10 duration-500">
             <div className="bg-[#1F1F1F] text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center space-x-4 border-l-4 border-emerald-500">

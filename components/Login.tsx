@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
-import { LogIn, Eye, EyeOff, Mail, Lock, ShieldCheck, ArrowRight, RefreshCw, Key } from 'lucide-react';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase';
+import { RefreshCw } from 'lucide-react';
 
 interface LoginProps {
   onLogin: () => void;
@@ -37,50 +37,45 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center p-4 overflow-hidden font-display">
-      {/* Dynamic Background Layer */}
-      <div className="absolute inset-0 z-0 bg-animated animate-gradient-slow opacity-80"></div>
+    <div className="relative min-h-screen w-full flex items-center justify-center p-4 overflow-hidden bg-[#2d2929] font-sans">
+      {/* Background Subtle Gradient */}
+      <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#211111] to-[#2d2929]"></div>
       
-      {/* Decorative Elements for "Alive" feel */}
-      <div className="absolute inset-0 z-0 overflow-hidden">
-        <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-primary/20 rounded-full blur-[120px] mix-blend-screen animate-pulse"></div>
-        <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-white/10 rounded-full blur-[100px] mix-blend-overlay"></div>
-      </div>
-
-      {/* Smoky Login Container */}
-      <div className="smoky-glass relative z-10 w-full max-w-[420px] rounded-2xl p-0 overflow-hidden animate-float">
+      <div className="relative z-10 w-full max-w-[420px] flex flex-col items-center animate-in fade-in zoom-in duration-500">
         
-        {/* Header Section */}
-        <div className="pt-10 pb-6 px-8 text-center border-b border-white/5 bg-gradient-to-b from-white/5 to-transparent">
-          <div className="mb-4 inline-flex items-center justify-center p-0 w-24 h-24 rounded-2xl bg-white border border-primary/20 shadow-[0_0_25px_rgba(234,42,51,0.4)] overflow-hidden">
-             <img 
-              src="https://i.postimg.cc/5NTGwxd0/LOGO_SISTEMMA.jpg" 
-              alt="Sapien Logo" 
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <h1 className="text-white tracking-tight text-[28px] font-bold leading-tight pb-1 uppercase">SAPIEN CRM</h1>
-          <p className="text-[#b89d9f] text-[10px] font-black tracking-[0.3em] uppercase opacity-80">Sistema Gestor Imobiliário</p>
+        {/* Logo Container - Red Square with Intense Glow */}
+        <div className="mb-8 w-36 h-36 rounded-[2.5rem] bg-[#ea2a33] p-1.5 shadow-[0_0_60px_rgba(234,42,51,0.6)] flex items-center justify-center border border-white/20 overflow-hidden">
+           <img 
+            src="https://i.postimg.cc/5NTGwxd0/LOGO_SISTEMMA.jpg" 
+            alt="Sapien Logo" 
+            className="w-full h-full object-cover rounded-[2.2rem]" 
+          />
         </div>
 
-        {/* Login Form */}
-        <div className="p-8 flex flex-col gap-5">
+        <div className="text-center mb-12">
+          <h1 className="text-white text-4xl font-black tracking-tighter leading-none mb-3">SAPIEN CRM</h1>
+          <p className="text-gray-500 text-[11px] font-bold uppercase tracking-[0.4em] opacity-80">SISTEMA GESTOR IMOBILIÁRIO</p>
+        </div>
+
+        <div className="w-full space-y-7 px-4">
+          <div className="h-px bg-white/5 w-full"></div>
+
           {error && (
-            <div className="bg-primary/20 border border-primary/30 p-3 rounded-lg text-xs font-black text-center text-primary tracking-widest animate-pulse">
+            <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl text-[10px] font-black text-center text-red-500 tracking-widest uppercase">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Field */}
-            <div className="flex flex-col gap-2">
-              <label className="text-[#e5e5e5] text-sm font-medium leading-normal pl-1">Login / E-mail</label>
-              <div className="flex items-center input-glass rounded-lg focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50 focus-within:bg-black/40 transition-all duration-300">
-                <div className="pl-4 pr-2 text-[#b89d9f] flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[20px]">mail</span>
+            <div className="space-y-3">
+              <label className="text-gray-400 text-[11px] font-bold uppercase tracking-widest pl-1 block">Login / E-mail</label>
+              <div className="flex items-center bg-[#242121] border border-white/5 rounded-2xl focus-within:ring-2 focus-within:ring-[#ea2a33]/40 transition-all shadow-inner">
+                <div className="pl-5 pr-3 text-gray-500">
+                  <span className="material-icons-round text-2xl">mail</span>
                 </div>
                 <input 
-                  className="flex w-full bg-transparent border-none text-white placeholder:text-[#b89d9f]/30 h-12 text-base focus:ring-0" 
+                  className="w-full bg-transparent border-none text-white placeholder:text-gray-700 h-16 text-sm font-semibold focus:ring-0" 
                   placeholder="usuario@sapien.com.br" 
                   type="email"
                   value={email}
@@ -91,14 +86,14 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </div>
 
             {/* Password Field */}
-            <div className="flex flex-col gap-2">
-              <label className="text-[#e5e5e5] text-sm font-medium leading-normal pl-1">Senha</label>
-              <div className="flex items-center input-glass rounded-lg focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50 focus-within:bg-black/40 transition-all duration-300">
-                <div className="pl-4 pr-2 text-[#b89d9f] flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[20px]">vpn_key</span>
+            <div className="space-y-3">
+              <label className="text-gray-400 text-[11px] font-bold uppercase tracking-widest pl-1 block">Senha</label>
+              <div className="flex items-center bg-[#242121] border border-white/5 rounded-2xl focus-within:ring-2 focus-within:ring-[#ea2a33]/40 transition-all shadow-inner">
+                <div className="pl-5 pr-3 text-gray-500">
+                  <span className="material-icons-round text-2xl">vpn_key</span>
                 </div>
                 <input 
-                  className="flex w-full bg-transparent border-none text-white placeholder:text-[#b89d9f]/30 h-12 text-base focus:ring-0" 
+                  className="w-full bg-transparent border-none text-white placeholder:text-gray-700 h-16 text-sm font-semibold focus:ring-0" 
                   placeholder="••••••••" 
                   type={showPassword ? "text" : "password"}
                   value={password}
@@ -108,69 +103,66 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 <button 
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="pr-4 pl-2 text-[#b89d9f] hover:text-white transition-colors flex items-center justify-center"
+                  className="pr-5 pl-2 text-gray-500 hover:text-white transition-colors"
                 >
-                  <span className="material-symbols-outlined text-[20px]">
+                  <span className="material-icons-round text-2xl">
                     {showPassword ? "visibility_off" : "visibility"}
                   </span>
                 </button>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="pt-2">
-              <button 
-                type="submit"
-                disabled={loading}
-                className="w-full h-14 bg-primary hover:bg-red-600 text-white text-base font-bold rounded-lg shadow-[0_4px_14px_0_rgba(234,42,51,0.39)] hover:shadow-[0_6px_20px_rgba(234,42,51,0.23)] hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <RefreshCw size={24} className="animate-spin" />
-                ) : (
-                  <>
-                    <span className="tracking-widest uppercase">Acessar o Sistema</span>
-                    <span className="material-symbols-outlined text-[20px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
-                  </>
-                )}
-              </button>
-            </div>
+            {/* Main Action Button */}
+            <button 
+              type="submit"
+              disabled={loading}
+              className="w-full h-16 bg-[#ea2a33] hover:bg-[#ff3b45] text-white rounded-2xl shadow-[0_12px_40px_rgba(234,42,51,0.4)] hover:shadow-[0_15px_50px_rgba(234,42,51,0.5)] transition-all duration-300 flex items-center justify-center gap-3 group disabled:opacity-50 active:scale-95"
+            >
+              {loading ? (
+                <RefreshCw size={24} className="animate-spin" />
+              ) : (
+                <>
+                  <span className="text-xs font-black uppercase tracking-widest">ACESSAR O SISTEMA</span>
+                  <span className="material-icons-round text-2xl group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                </>
+              )}
+            </button>
           </form>
 
-          {/* Helper Links */}
-          <div className="flex flex-col items-center gap-4 mt-2">
+          {/* Secondary Actions */}
+          <div className="flex flex-col items-center space-y-8 pt-4">
             <button 
-              onClick={() => alert('Entre em contato com o suporte para recuperar sua senha.')}
-              className="text-sm text-[#b89d9f] hover:text-white transition-colors flex items-center gap-1 group"
+              type="button"
+              onClick={() => alert('Suporte SAP: Contate o administrador para reset de credenciais.')}
+              className="text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider group"
             >
-              <span className="material-symbols-outlined text-[16px] group-hover:text-primary transition-colors">lock_reset</span>
+              <span className="material-icons-round text-xl text-gray-600 group-hover:text-[#ea2a33]">lock_reset</span>
               Esqueceu a senha?
             </button>
-            <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
-            <p className="text-sm text-[#b89d9f]">
-              {mode === 'login' ? 'Não tem acesso?' : 'Já possui cadastro?'} 
+            
+            <div className="flex items-center gap-2 text-[11px] font-bold text-gray-500 uppercase tracking-widest">
+              <span>Não tem acesso?</span>
               <button 
+                type="button"
                 onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-                className="text-white hover:text-primary font-medium transition-colors ml-1 underline decoration-primary/50 underline-offset-4 hover:decoration-primary"
+                className="text-white hover:text-[#ea2a33] transition-colors underline decoration-white/20 underline-offset-8"
               >
-                {mode === 'login' ? 'Solicitar acesso' : 'Voltar ao Login'}
+                Solicitar acesso
               </button>
-            </p>
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Status Bar Footer */}
-        <div className="bg-black/20 px-6 py-3 border-t border-white/5 flex justify-between items-center text-[10px] uppercase tracking-widest text-[#b89d9f]/60">
-          <span className="flex items-center gap-1 font-black">
-            <span className="material-symbols-outlined text-[12px] text-primary">verified_user</span>
-            v2.5.0
-          </span>
-          <span className="flex items-center gap-1.5 font-black">
-            Status do Servidor
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-            </span>
-          </span>
+      {/* Cloud Status Footer */}
+      <div className="absolute bottom-8 flex items-center gap-8 opacity-20 pointer-events-none">
+        <div className="flex items-center gap-2">
+           <span className="material-icons-round text-sm text-[#ea2a33]">security</span>
+           <span className="text-[9px] font-black text-white uppercase tracking-[0.3em]">Encrypted Session</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+          <span className="text-[9px] font-black text-white uppercase tracking-[0.3em]">SAP Data Center Online</span>
         </div>
       </div>
     </div>

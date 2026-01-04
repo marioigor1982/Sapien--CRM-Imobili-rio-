@@ -123,6 +123,7 @@ export interface MuralMessage {
   authorName: string;
   authorEmail: string;
   createdAt: string;
+  updatedAt: string; // Used for "latest interaction on top" logic
   isSeenGlobal?: boolean;
   replies: {
     authorName: string;
