@@ -69,14 +69,26 @@ const App: React.FC = () => {
       newMessages.forEach(msg => {
         const currentCount = msg.interacoes?.length || 0;
         const lastCount = prevMuralStats.current[msg.id];
+        const isAuthor = msg.criador_id === user.email;
 
-        // SINO: Se aumentou e o autor não é o usuário atual
+        // Se o contador de interações mudou e o usuário logado não é quem comentou por último
         if (lastCount !== undefined && currentCount > lastCount) {
-          const lastInteraction = msg.interacoes[currentCount - 1];
-          if (lastInteraction && lastInteraction.autor !== user.email) {
-            showNotification(`Nova interação no mural: ${msg.titulo}`);
+          const lastIt = msg.interacoes[currentCount - 1];
+          if (lastIt && lastIt.autor !== user.email) {
+            showNotification(`Nova resposta no mural: ${msg.titulo}`);
           }
         }
+        
+        // Se a mensagem é nova e o usuário não é o autor
+        if (lastCount === undefined && !isAuthor) {
+          // Apenas se a mensagem tiver sido criada nos últimos 10 segundos (para não alertar histórico antigo no primeiro load)
+          const createdTime = new Date(msg.createdAt).getTime();
+          const now = new Date().getTime();
+          if (now - createdTime < 10000) {
+             showNotification(`Novo tópico no mural: ${msg.titulo}`);
+          }
+        }
+
         prevMuralStats.current[msg.id] = currentCount;
       });
 
@@ -105,12 +117,15 @@ const App: React.FC = () => {
   if (isLoading) return <div className="h-screen flex items-center justify-center bg-gray-50"><div className="w-8 h-8 border-4 border-[#ea2a33] border-t-transparent rounded-full animate-spin"></div></div>;
   if (!isAuthenticated) return <Login onLogin={() => setIsAuthenticated(true)} />;
 
+  // MENSAGENS NÃO LIDAS PELO USUÁRIO ATUAL
+  const unreadMuralCount = muralMessages.filter(m => !m.lido_por?.includes(user?.email || '')).length;
+
   return (
     <div className="flex h-screen bg-[#F3F4F6] overflow-hidden">
       <Sidebar 
         currentView={currentView} setView={setCurrentView} onLogout={handleLogout} 
         isAdmin={isAdmin} isCollapsed={!isSidebarOpen} setIsCollapsed={v => setIsSidebarOpen(!v)}
-        unreadMuralCount={muralMessages.filter(m => !m.isSeenGlobal).length}
+        unreadMuralCount={unreadMuralCount}
       />
       <div className="flex-1 flex flex-col min-w-0 relative">
         <Header 
@@ -118,15 +133,15 @@ const App: React.FC = () => {
           userEmail={user?.email || ''} pendingApprovals={pendingApprovals} processedRequests={processedApprovals}
           muralMessages={muralMessages} onApprove={handleApprove} isAdmin={isAdmin} 
         />
-        <main className="flex-1 overflow-auto">
-          {currentView === 'Dashboard' && <div className="p-8"><Dashboard leads={leads} clients={clients} properties={properties} brokers={brokers} /></div>}
-          {currentView === 'Kanban' && <div className="p-8"><KanbanBoard leads={leads} clients={clients} brokers={brokers} properties={properties} updatePhase={() => {}} isAdmin={isAdmin} /></div>}
+        <main className="flex-1 overflow-auto bg-white">
+          {currentView === 'Dashboard' && <div className="p-8 bg-[#F3F4F6] min-h-full"><Dashboard leads={leads} clients={clients} properties={properties} brokers={brokers} /></div>}
+          {currentView === 'Kanban' && <div className="p-8 bg-[#F3F4F6] min-h-full"><KanbanBoard leads={leads} clients={clients} brokers={brokers} properties={properties} updatePhase={() => {}} isAdmin={isAdmin} /></div>}
           {currentView === 'Mural' && <Mural messages={muralMessages} user={user} />}
-          {currentView === 'Clientes' && <div className="p-8"><GenericCrud title="Clientes" data={clients} type="client" onSave={d => d.id ? clientService.update(d.id, d) : clientService.create(d)} onDelete={clientService.remove} isAdmin={isAdmin} /></div>}
-          {currentView === 'Corretores' && <div className="p-8"><GenericCrud title="Corretores" data={brokers} type="broker" onSave={d => d.id ? brokerService.update(d.id, d) : brokerService.create(d)} onDelete={brokerService.remove} isAdmin={isAdmin} /></div>}
-          {currentView === 'Properties' && <div className="p-8"><GenericCrud title="Imóveis" data={properties} type="property" onSave={d => d.id ? propertyService.update(d.id, d) : propertyService.create(d)} onDelete={propertyService.remove} isAdmin={isAdmin} /></div>}
-          {currentView === 'Bancos' && <div className="p-8"><GenericCrud title="Bancos" data={banks} type="bank" onSave={d => d.id ? bankService.update(d.id, d) : bankService.create(d)} onDelete={bankService.remove} isAdmin={isAdmin} /></div>}
-          {currentView === 'Construtoras' && <div className="p-8"><GenericCrud title="Construtoras" data={companies} type="company" onSave={d => d.id ? companyService.update(d.id, d) : companyService.create(d)} onDelete={companyService.remove} isAdmin={isAdmin} /></div>}
+          {currentView === 'Clientes' && <div className="p-8 bg-[#F3F4F6] min-h-full"><GenericCrud title="Clientes" data={clients} type="client" onSave={d => d.id ? clientService.update(d.id, d) : clientService.create(d)} onDelete={clientService.remove} isAdmin={isAdmin} /></div>}
+          {currentView === 'Corretores' && <div className="p-8 bg-[#F3F4F6] min-h-full"><GenericCrud title="Corretores" data={brokers} type="broker" onSave={d => d.id ? brokerService.update(d.id, d) : brokerService.create(d)} onDelete={brokerService.remove} isAdmin={isAdmin} /></div>}
+          {currentView === 'Properties' && <div className="p-8 bg-[#F3F4F6] min-h-full"><GenericCrud title="Imóveis" data={properties} type="property" onSave={d => d.id ? propertyService.update(d.id, d) : propertyService.create(d)} onDelete={propertyService.remove} isAdmin={isAdmin} /></div>}
+          {currentView === 'Bancos' && <div className="p-8 bg-[#F3F4F6] min-h-full"><GenericCrud title="Bancos" data={banks} type="bank" onSave={d => d.id ? bankService.update(d.id, d) : bankService.create(d)} onDelete={bankService.remove} isAdmin={isAdmin} /></div>}
+          {currentView === 'Construtoras' && <div className="p-8 bg-[#F3F4F6] min-h-full"><GenericCrud title="Construtoras" data={companies} type="company" onSave={d => d.id ? companyService.update(d.id, d) : companyService.create(d)} onDelete={companyService.remove} isAdmin={isAdmin} /></div>}
         </main>
 
         {notification && (

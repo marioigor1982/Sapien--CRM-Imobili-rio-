@@ -34,10 +34,12 @@ export interface MuralFile {
 }
 
 export interface MuralReply {
+  id: string; // ID único para a interação para indexação
   autor: string;
   texto: string;
   timestamp: string;
-  arquivo?: string; // URL direta do Firebase Storage conforme script
+  arquivo?: string;
+  likes?: string[]; // Array de emails de quem curtiu
 }
 
 export interface MuralMessage {
@@ -51,8 +53,10 @@ export interface MuralMessage {
   createdAt: string;
   timestamp_ultima_interacao: any; 
   isSeenGlobal?: boolean;
+  lido_por?: string[]; // Array de emails que visualizaram
+  likes?: string[]; // Array de emails de quem curtiu o post principal
   arquivos?: MuralFile[];
-  interacoes: MuralReply[]; // Renomeado de respostas para interacoes
+  interacoes: MuralReply[];
 }
 
 export interface Client {
