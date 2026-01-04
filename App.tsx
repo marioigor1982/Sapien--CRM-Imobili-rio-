@@ -42,11 +42,11 @@ const App: React.FC = () => {
   const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);
   const inactivityTimer = useRef<any>(null);
 
-  // Reinicia o timer a cada interação
   const resetInactivityTimer = () => {
     if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
     if (isAuthenticated) {
-      inactivityTimer.current = setTimeout(() => { handleLogout(); }, 10 * 60 * 1000); // 10 Minutos
+      // 10 minutos de timeout
+      inactivityTimer.current = setTimeout(() => { handleLogout(); }, 10 * 60 * 1000); 
     }
   };
 
@@ -100,9 +100,9 @@ const App: React.FC = () => {
     signOut(auth).then(() => {
       localStorage.clear();
       sessionStorage.clear();
-      // replace garante que o histórico não permita voltar para a sessão expirada
-      window.location.replace('/');
-    }).catch(err => console.error("Erro crítico ao sair:", err));
+      // Força recarregamento completo para limpar o estado do React e Recharts
+      window.location.href = '/'; 
+    }).catch(err => console.error("Erro no logout:", err));
   };
 
   const handleUpdateLeadPhase = async (leadId: string, newPhase: LeadPhase) => {
@@ -122,7 +122,7 @@ const App: React.FC = () => {
         isSeen: false,
         createdAt: new Date().toISOString()
       });
-      alert("Pedido de retrocesso gerado.");
+      alert("Retrocesso enviado para aprovação.");
       return;
     }
 
@@ -148,7 +148,7 @@ const App: React.FC = () => {
     } catch (err) { console.error(err); }
   };
 
-  if (isLoading) return <div className="h-screen flex items-center justify-center bg-[#F4F6F8]"><div className="w-12 h-12 border-4 border-[#8B0000] border-t-transparent rounded-full animate-spin"></div></div>;
+  if (isLoading) return <div className="h-screen flex items-center justify-center bg-[#F4F6F8]"><div className="w-10 h-10 border-4 border-[#8B0000] border-t-transparent rounded-full animate-spin"></div></div>;
   if (!isAuthenticated) return <Login onLogin={() => setIsAuthenticated(true)} />;
 
   return (
@@ -173,27 +173,11 @@ const App: React.FC = () => {
           onApprove={handleApprove} 
           isAdmin={isAdmin} 
         />
-        <main className="flex-1 overflow-auto p-4 md:p-6" id="main-content-scroll">
+        <main className="flex-1 overflow-auto p-6 md:p-8">
           <div className="max-w-7xl mx-auto h-full">
             {currentView === 'Dashboard' && <Dashboard leads={leads} clients={clients} properties={properties} brokers={brokers} />}
-            {currentView === 'Kanban' && (
-              <KanbanBoard 
-                leads={leads} clients={clients} brokers={brokers} properties={properties} 
-                updatePhase={handleUpdateLeadPhase} 
-                isAdmin={isAdmin} 
-                onDeleteLead={id => isAdmin ? leadService.remove(id) : alert('Solicite exclusão ao ADM')}
-              />
-            )}
-            {currentView === 'List' && (
-              <LeadTable 
-                leads={leads} clients={clients} brokers={brokers} properties={properties} 
-                banks={banks} companies={companies}
-                updatePhase={handleUpdateLeadPhase} 
-                onAddLead={() => {}} 
-                onEditLead={() => {}} 
-                onDeleteLead={id => isAdmin ? leadService.remove(id) : alert('Ação Restrita')}
-              />
-            )}
+            {currentView === 'Kanban' && <KanbanBoard leads={leads} clients={clients} brokers={brokers} properties={properties} updatePhase={handleUpdateLeadPhase} isAdmin={isAdmin} onDeleteLead={id => isAdmin ? leadService.remove(id) : alert('Ação restrita')} />}
+            {currentView === 'List' && <LeadTable leads={leads} clients={clients} brokers={brokers} properties={properties} banks={banks} companies={companies} updatePhase={handleUpdateLeadPhase} onAddLead={() => {}} onEditLead={() => {}} onDeleteLead={id => isAdmin ? leadService.remove(id) : alert('Ação restrita')} />}
             {currentView === 'Mural' && <Mural messages={muralMessages} user={user} onInteraction={resetInactivityTimer} />}
             {currentView === 'Clientes' && <GenericCrud title="Clientes" data={clients} type="client" onSave={d => d.id ? clientService.update(d.id, d) : clientService.create(d)} onDelete={clientService.remove} isAdmin={isAdmin} />}
             {currentView === 'Corretores' && <GenericCrud title="Corretores" data={brokers} type="broker" onSave={d => d.id ? brokerService.update(d.id, d) : brokerService.create(d)} onDelete={brokerService.remove} isAdmin={isAdmin} />}
