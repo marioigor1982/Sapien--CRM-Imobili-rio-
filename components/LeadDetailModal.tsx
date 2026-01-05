@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Lead, LeadPhase, LeadStatus, Client, Property, Bank, PHASES_ORDER, ConstructionCompany } from '../types';
-import { X, Calendar, AlertCircle, CheckCircle, HelpCircle, Save, TrendingUp, TrendingDown, Landmark, Building2, MapPin } from 'lucide-react';
+import { X, Calendar, AlertCircle, CheckCircle, HelpCircle, Save, TrendingUp, TrendingDown, Landmark, Building2, MapPin, Clock, History } from 'lucide-react';
 
 interface LeadDetailModalProps {
   lead: Lead;
@@ -19,6 +19,7 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({ lead, client, propert
   const [appraisalValue, setAppraisalValue] = useState<number>(lead.appraisalValue || 0);
   const [dateValue, setDateValue] = useState<string>('');
   const [isEvaluated, setIsEvaluated] = useState<boolean | null>(null);
+  const [activeTab, setActiveTab] = useState<'tratativa' | 'historico'>('tratativa');
 
   const isUrgent = (startDate: string) => {
     const diff = Date.now() - new Date(startDate).getTime();
@@ -83,6 +84,11 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({ lead, client, propert
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+  };
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   };
 
   const renderPhaseContent = () => {
@@ -219,7 +225,6 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({ lead, client, propert
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md overflow-y-auto">
       <div className={`bg-white rounded-[3rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in duration-300 ${urgent ? 'border-4 border-red-500' : ''}`}>
         
-        {/* Foto do Imóvel no Topo do Modal */}
         {property?.photos?.[0] && (
           <div className="h-48 w-full relative">
             <img src={property.photos[0]} alt="" className="w-full h-full object-cover" />
@@ -238,72 +243,129 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({ lead, client, propert
               <h3 className={`text-xl font-black tracking-tighter ${urgent ? 'animate-pulse' : ''}`}>
                 {urgent ? 'URGÊNCIA SAP CLOUD (>10 DIAS)' : 'TRATATIVA DE PIPELINE'}
               </h3>
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-70">Sincronização em Tempo Real</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-70">Operação Cloud Sincronizada</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={28} /></button>
         </div>
 
+        {/* Abas de Navegação */}
+        <div className="flex border-b border-slate-100">
+           <button 
+            onClick={() => setActiveTab('tratativa')}
+            className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'tratativa' ? 'border-b-4 border-[#8B0000] text-[#8B0000]' : 'text-slate-400'}`}
+           >
+             Tratativa Atual
+           </button>
+           <button 
+            onClick={() => setActiveTab('historico')}
+            className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'historico' ? 'border-b-4 border-[#8B0000] text-[#8B0000]' : 'text-slate-400'}`}
+           >
+             Histórico Digital
+           </button>
+        </div>
+
         <div className={`p-8 space-y-8 ${urgent ? 'bg-red-50/10' : ''}`}>
           
-          {/* Dados Automáticos do Display */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-             <div className="col-span-2 bg-gray-50 p-6 rounded-3xl border border-gray-100">
-                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Cliente / Proponente</p>
-                <p className={`text-lg font-black tracking-tight ${urgent ? 'text-red-700' : 'text-gray-900'}`}>{client?.name}</p>
-                <div className="flex gap-4 mt-4">
-                   <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-500">
-                      <Landmark size={12} className="text-[#8B0000]" /> {bank?.name}
-                   </div>
-                   <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-500">
-                      <Building2 size={12} className="text-[#8B0000]" /> {company?.name}
-                   </div>
-                </div>
-             </div>
-             <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 flex flex-col justify-center text-center">
-                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Início da Fase</p>
-                <p className="text-sm font-black text-gray-900">{new Date(currentHistory.startDate).toLocaleDateString()}</p>
-                <p className="text-[10px] font-bold text-gray-400">{new Date(currentHistory.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-             </div>
-          </div>
-
-          <div className={`p-6 rounded-[2rem] border-2 border-dashed ${urgent ? 'border-red-300 bg-red-50' : 'border-gray-100 bg-white shadow-soft'}`}>
-            {!showMotiveInput ? renderPhaseContent() : (
-              <div className="space-y-4 animate-in slide-in-from-bottom-4">
-                <div className="flex items-center gap-2 text-[#8B0000]">
-                  <AlertCircle size={20} />
-                  <h4 className="font-black text-xs uppercase tracking-widest">Motivo da Ação ({showMotiveInput})</h4>
-                </div>
-                <textarea 
-                  maxLength={800}
-                  placeholder="Digite o motivo detalhado aqui (obrigatório para gravar)..."
-                  className="w-full h-40 bg-gray-50 border-gray-100 rounded-2xl p-5 text-sm font-medium focus:ring-2 focus:ring-[#8B0000] outline-none resize-none shadow-inner"
-                  value={motiveText}
-                  onChange={e => setMotiveText(e.target.value)}
-                />
-                <div className="flex justify-between items-center">
-                   <span className="text-[10px] font-black text-gray-300 uppercase">{motiveText.length} / 800 CARACTERES</span>
-                   <div className="flex gap-2">
-                      <button onClick={() => setShowMotiveInput(null)} className="px-6 py-3 text-[10px] font-black uppercase text-gray-400 hover:text-gray-600">Voltar</button>
-                      <button 
-                        onClick={() => handleAdvance(showMotiveInput)} 
-                        disabled={!motiveText.trim()}
-                        className="px-10 py-3 bg-[#8B0000] text-white rounded-xl text-[10px] font-black uppercase shadow-xl disabled:opacity-30 hover:scale-105 transition-all"
-                      >
-                        <Save size={14} className="inline mr-2" /> Gravar e Finalizar
-                      </button>
-                   </div>
-                </div>
+          {activeTab === 'tratativa' ? (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                 <div className="col-span-2 bg-gray-50 p-6 rounded-3xl border border-gray-100">
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Cliente / Proponente</p>
+                    <p className={`text-lg font-black tracking-tight ${urgent ? 'text-red-700' : 'text-gray-900'}`}>{client?.name}</p>
+                    <div className="flex gap-4 mt-4">
+                       <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-500">
+                          <Landmark size={12} className="text-[#8B0000]" /> {bank?.name}
+                       </div>
+                       <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-500">
+                          <Building2 size={12} className="text-[#8B0000]" /> {company?.name}
+                       </div>
+                    </div>
+                 </div>
+                 <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 flex flex-col justify-center text-center">
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Início da Fase</p>
+                    <p className="text-sm font-black text-gray-900">{new Date(currentHistory.startDate).toLocaleDateString()}</p>
+                    <p className="text-[10px] font-bold text-gray-400">{new Date(currentHistory.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                 </div>
               </div>
-            )}
-          </div>
+
+              <div className={`p-6 rounded-[2rem] border-2 border-dashed ${urgent ? 'border-red-300 bg-red-50' : 'border-gray-100 bg-white shadow-soft'}`}>
+                {!showMotiveInput ? renderPhaseContent() : (
+                  <div className="space-y-4 animate-in slide-in-from-bottom-4">
+                    <div className="flex items-center gap-2 text-[#8B0000]">
+                      <AlertCircle size={20} />
+                      <h4 className="font-black text-xs uppercase tracking-widest">Motivo da Ação ({showMotiveInput})</h4>
+                    </div>
+                    <textarea 
+                      maxLength={800}
+                      placeholder="Digite o motivo detalhado aqui (obrigatório para gravar)..."
+                      className="w-full h-40 bg-gray-50 border-gray-100 rounded-2xl p-5 text-sm font-medium focus:ring-2 focus:ring-[#8B0000] outline-none resize-none shadow-inner"
+                      value={motiveText}
+                      onChange={e => setMotiveText(e.target.value)}
+                    />
+                    <div className="flex justify-between items-center">
+                       <span className="text-[10px] font-black text-gray-300 uppercase">{motiveText.length} / 800 CARACTERES</span>
+                       <div className="flex gap-2">
+                          <button onClick={() => setShowMotiveInput(null)} className="px-6 py-3 text-[10px] font-black uppercase text-gray-400 hover:text-gray-600">Voltar</button>
+                          <button 
+                            onClick={() => handleAdvance(showMotiveInput)} 
+                            disabled={!motiveText.trim()}
+                            className="px-10 py-3 bg-[#8B0000] text-white rounded-xl text-[10px] font-black uppercase shadow-xl disabled:opacity-30 hover:scale-105 transition-all"
+                          >
+                            <Save size={14} className="inline mr-2" /> Gravar e Finalizar
+                          </button>
+                       </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="space-y-6 max-h-[400px] overflow-y-auto pr-4 scrollbar-hide">
+              <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                <History size={16} className="text-[#8B0000]" /> Linha do Tempo Digital (Evolução)
+              </h4>
+              <div className="relative border-l-2 border-slate-100 ml-3 pl-8 space-y-8 pb-10">
+                {lead.history.map((hist, i) => (
+                  <div key={i} className="relative">
+                    <div className={`absolute -left-[41px] top-0 w-6 h-6 rounded-full border-4 border-white shadow-md ${hist.endDate ? 'bg-green-500' : 'bg-[#8B0000] animate-pulse'}`}></div>
+                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 shadow-sm">
+                      <p className="text-xs font-black text-slate-900 uppercase tracking-tighter mb-2">{hist.phase}</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                           <p className="text-[9px] font-black text-slate-400 uppercase">Abertura</p>
+                           <p className="text-[10px] font-bold text-slate-600">{formatDate(hist.startDate)}</p>
+                        </div>
+                        {hist.endDate && (
+                          <div>
+                             <p className="text-[9px] font-black text-green-500 uppercase">Encerramento</p>
+                             <p className="text-[10px] font-bold text-green-700">{formatDate(hist.endDate)}</p>
+                          </div>
+                        )}
+                      </div>
+                      {hist.motive && (
+                        <div className="mt-3 pt-3 border-t border-slate-100">
+                           <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Observação/Motivo:</p>
+                           <p className="text-[10px] text-slate-500 italic font-medium leading-relaxed">{hist.motive}</p>
+                        </div>
+                      )}
+                      <div className="mt-2 text-right">
+                         <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${hist.status === LeadStatus.CONCLUIDO ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                           Status: {hist.status}
+                         </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="px-8 py-5 bg-gray-50 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-300 uppercase tracking-widest">
-           <span>Engine v2.1.0 • Pipeline Ativo</span>
+           <span>Engine v2.2.5 • Auditoria Ativa</span>
            <div className="flex items-center gap-4">
-              <span>Status Fase: {lead.status} {getStatusEmoji(lead.status)}</span>
-              {lead.internalMessage && <span className="text-red-600 animate-pulse">Mensagem Interna Disponível</span>}
+              <span>Fase Atual: {lead.currentPhase}</span>
            </div>
         </div>
       </div>

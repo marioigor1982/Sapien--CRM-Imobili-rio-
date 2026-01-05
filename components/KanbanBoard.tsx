@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Lead, LeadPhase, PHASES_ORDER, Client, Broker, Property, LeadStatus, Bank } from '../types';
-import { MapPin, Plus, Trash2, MessageSquare, AlertTriangle, Building2, Landmark, Eye, Edit2 } from 'lucide-react';
+import { MapPin, Plus, Trash2, MessageSquare, AlertTriangle, Briefcase, Landmark, Eye, Edit2, Zap } from 'lucide-react';
 
 interface KanbanBoardProps {
   leads: Lead[];
@@ -65,7 +65,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     return (
       <div 
         key={phase} 
-        className="flex flex-col min-w-[280px] bg-slate-50/50 rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm"
+        className="flex flex-col min-w-[280px] bg-slate-50/50 rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm transition-all hover:bg-slate-100/50"
         onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
         onDrop={(e) => handleDrop(e, phase)}
       >
@@ -80,6 +80,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
           {phaseLeads.map(lead => {
             const client = clients.find(c => c.id === lead.clientId);
             const property = properties.find(p => p.id === lead.propertyId);
+            const broker = brokers.find(b => b.id === lead.brokerId);
             const bank = banks.find(b => b.id === lead.bankId);
             const urgent = isLeadUrgent(lead);
             
@@ -105,6 +106,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                        <h5 className={`font-black text-[11px] truncate max-w-[140px] uppercase tracking-tighter ${urgent ? 'text-red-600' : 'text-slate-900'}`}>{client?.name}</h5>
                      </div>
                   </div>
+
+                  {/* Corretor no Kanban */}
+                  <div className="flex items-center gap-1.5 mb-2 px-1">
+                     <Briefcase size={10} className="text-[#8B0000]" />
+                     <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter truncate">{broker?.name || 'Sem Corretor'}</span>
+                  </div>
                   
                   <div className="space-y-2 mb-3">
                      <div className={`flex items-center text-[9px] font-bold ${urgent ? 'text-red-500' : 'text-slate-400'}`}>
@@ -122,10 +129,16 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                           {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(property?.value || 0)}
                         </span>
                      </div>
-                     <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={(e) => { e.stopPropagation(); onEditLead?.(lead); }} className="p-1.5 text-slate-300 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-all"><Edit2 size={12} /></button>
+                     <div className="flex items-center gap-1.5">
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); onViewLead?.(lead); }} 
+                          className="bg-[#8B0000] text-white p-1.5 rounded-lg shadow-sm hover:scale-110 transition-transform"
+                          title="Tratar Lead"
+                        >
+                          <Zap size={10} />
+                        </button>
                         {isAdmin && (
-                          <button onClick={(e) => { e.stopPropagation(); onDeleteLead?.(lead.id); }} className="p-1.5 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
+                          <button onClick={(e) => { e.stopPropagation(); onDeleteLead?.(lead.id); }} className="p-1 text-slate-300 hover:text-red-600 transition-colors">
                             <Trash2 size={12} />
                           </button>
                         )}
