@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Lead, Client, Broker, Property, Bank, ConstructionCompany, LeadPhase, LeadStatus, PHASES_ORDER } from '../types';
-import { Eye, Edit2, Trash2, Zap, Clock, User, Briefcase, ChevronDown, ChevronUp, Calendar, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Eye, Edit2, Trash2, Zap, Clock, User, Briefcase, ChevronDown, ChevronUp, Calendar, ArrowRight, CheckCircle2, Wallet } from 'lucide-react';
 
 interface LeadTableProps {
   leads: Lead[];
@@ -83,16 +83,17 @@ const LeadTable: React.FC<LeadTableProps> = ({
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100">
                 <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Proponente / Status</th>
-                <th className="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Corretor Responsável</th>
+                <th className="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Corretor</th>
                 <th className="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Fase Atual</th>
-                <th className="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Ativo / VGV</th>
-                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Ações de Tratativa</th>
+                <th className="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">VGV Ativo</th>
+                <th className="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Comissão (R$)</th>
+                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {leads.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-24 text-center">
+                  <td colSpan={6} className="py-24 text-center">
                     <div className="flex flex-col items-center opacity-20">
                       <Briefcase size={48} className="mb-4" />
                       <p className="font-black uppercase text-xs tracking-widest">Nenhum lead encontrado no Sapien Cloud</p>
@@ -104,6 +105,9 @@ const LeadTable: React.FC<LeadTableProps> = ({
                 const property = properties.find(p => p.id === lead.propertyId);
                 const broker = brokers.find(b => b.id === lead.brokerId);
                 const isExpanded = expandedLead === lead.id;
+                
+                // Cálculo da comissão
+                const commissionValue = (Number(property?.value || 0) * Number(broker?.commissionRate || 0)) / 100;
 
                 return (
                   <React.Fragment key={lead.id}>
@@ -119,27 +123,28 @@ const LeadTable: React.FC<LeadTableProps> = ({
                       </td>
                       
                       <td className="px-6 py-5">
-                        <div className="flex items-center gap-2">
-                           <div className="p-1.5 bg-red-50 text-[#8B0000] rounded-lg">
-                              <User size={12} />
-                           </div>
-                           <span className="text-[10px] font-black text-slate-600 uppercase tracking-tighter truncate max-w-[150px]">
+                        <div className="flex flex-col">
+                           <span className="text-[10px] font-black text-slate-900 uppercase tracking-tighter truncate max-w-[120px]">
                               {broker?.name || 'Não Vinculado'}
                            </span>
+                           <span className="text-[8px] font-bold text-slate-400 uppercase">CRECI: {broker?.creci || '---'}</span>
                         </div>
                       </td>
 
                       <td className="px-6 py-5 text-center">
                         <div className="inline-flex items-center px-3 py-1.5 bg-slate-100 text-slate-600 text-[9px] font-black uppercase rounded-lg border border-slate-200 tracking-tighter">
-                          <Clock size={10} className="mr-1.5" />
                           {lead.currentPhase}
                         </div>
                       </td>
 
                       <td className="px-6 py-5">
-                        <div className="flex flex-col">
-                          <span className="text-xs font-black text-[#8B0000]">{formatCurrency(property?.value || 0)}</span>
-                          <span className="text-[9px] font-bold text-slate-400 truncate max-w-[180px] uppercase">{property?.title || 'Sem Ativo'}</span>
+                        <span className="text-xs font-black text-slate-600">{formatCurrency(property?.value || 0)}</span>
+                      </td>
+
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-1.5">
+                          <Wallet size={12} className="text-[#8B0000]" />
+                          <span className="text-xs font-black text-[#8B0000]">{formatCurrency(commissionValue)}</span>
                         </div>
                       </td>
 
@@ -150,7 +155,7 @@ const LeadTable: React.FC<LeadTableProps> = ({
                             className={`p-2 rounded-xl transition-all ${isExpanded ? 'bg-[#8B0000] text-white shadow-lg' : 'text-slate-300 hover:text-slate-600 hover:bg-slate-100'}`}
                             title="Ver Evolução"
                           >
-                            <History size={18} />
+                            <Clock size={18} />
                           </button>
                           
                           <button 
@@ -163,9 +168,9 @@ const LeadTable: React.FC<LeadTableProps> = ({
 
                           <button 
                             onClick={() => onViewLead?.(lead)}
-                            className="flex items-center gap-2 bg-[#8B0000] text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase shadow-lg hover:scale-105 transition-all"
+                            className="bg-[#8B0000] text-white p-2 rounded-xl shadow-lg hover:scale-110 transition-all"
                           >
-                            <Zap size={14} /> Tratar
+                            <Zap size={16} />
                           </button>
                           
                           <button onClick={() => onDeleteLead(lead.id)} className="p-2 text-slate-300 hover:text-red-600 transition-colors"><Trash2 size={18} /></button>
@@ -175,11 +180,11 @@ const LeadTable: React.FC<LeadTableProps> = ({
                     
                     {isExpanded && (
                       <tr className="bg-slate-50/80 animate-in slide-in-from-top-2 duration-300">
-                        <td colSpan={5} className="px-10 py-10 border-l-8 border-[#8B0000]">
+                        <td colSpan={6} className="px-10 py-10 border-l-8 border-[#8B0000]">
                           <div className="space-y-6">
                             <div className="flex items-center justify-between">
                                <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.3em] flex items-center gap-2">
-                                 <History size={16} className="text-[#8B0000]" /> Linha do Tempo de Evolução Digital
+                                 <HistoryIcon size={16} className="text-[#8B0000]" /> Linha do Tempo de Evolução Digital
                                </h4>
                                <span className="text-[9px] font-black text-slate-400 uppercase">Auditado em tempo real</span>
                             </div>
@@ -200,11 +205,6 @@ const LeadTable: React.FC<LeadTableProps> = ({
                                          <span className="text-[10px] font-bold text-green-700">{formatDate(hist.endDate)}</span>
                                       </div>
                                     )}
-                                    <div className="mt-3 flex justify-between items-center">
-                                       <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${hist.endDate ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                                          {hist.status}
-                                       </span>
-                                    </div>
                                   </div>
                                 </div>
                               ))}
@@ -224,7 +224,7 @@ const LeadTable: React.FC<LeadTableProps> = ({
   );
 };
 
-const History = ({ size, className }: { size: number, className?: string }) => (
+const HistoryIcon = ({ size, className }: { size: number, className?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
 );
 

@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Lead, LeadPhase, PHASES_ORDER, Client, Broker, Property, LeadStatus, Bank } from '../types';
-import { MapPin, Plus, Trash2, MessageSquare, AlertTriangle, Briefcase, Landmark, Eye, Edit2, Zap } from 'lucide-react';
+import { MapPin, Plus, Trash2, MessageSquare, AlertTriangle, Briefcase, Landmark, Eye, Edit2, Zap, Wallet } from 'lucide-react';
 
 interface KanbanBoardProps {
   leads: Lead[];
@@ -60,6 +60,10 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     return diff > 10 * 24 * 60 * 60 * 1000;
   };
 
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+  };
+
   const renderPhaseColumn = (phase: LeadPhase) => {
     const phaseLeads = leads.filter(l => l.currentPhase === phase);
     return (
@@ -84,6 +88,9 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
             const bank = banks.find(b => b.id === lead.bankId);
             const urgent = isLeadUrgent(lead);
             
+            // Cálculo da comissão para o Kanban
+            const commissionValue = (Number(property?.value || 0) * Number(broker?.commissionRate || 0)) / 100;
+
             return (
               <div 
                 key={lead.id} 
@@ -107,16 +114,22 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                      </div>
                   </div>
 
-                  {/* Corretor no Kanban */}
                   <div className="flex items-center gap-1.5 mb-2 px-1">
                      <Briefcase size={10} className="text-[#8B0000]" />
                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter truncate">{broker?.name || 'Sem Corretor'}</span>
                   </div>
                   
-                  <div className="space-y-2 mb-3">
+                  <div className="space-y-2 mb-3 px-1">
                      <div className={`flex items-center text-[9px] font-bold ${urgent ? 'text-red-500' : 'text-slate-400'}`}>
                        <MapPin size={10} className="mr-1 shrink-0" /> 
                        <span className="truncate">{property?.title || 'Sem Ativo'}</span>
+                     </div>
+                     <div className="flex items-center gap-1.5 bg-slate-50 py-1.5 px-2 rounded-lg border border-slate-100">
+                        <Wallet size={10} className="text-[#8B0000]" />
+                        <div className="flex flex-col">
+                           <span className="text-[8px] font-black text-slate-400 uppercase leading-none">Previsão Comissão</span>
+                           <span className="text-[10px] font-black text-[#8B0000]">{formatCurrency(commissionValue)}</span>
+                        </div>
                      </div>
                   </div>
 
@@ -125,15 +138,14 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                         {bank?.logo && (
                           <img src={bank.logo} className="h-4 w-4 object-contain opacity-60 group-hover:opacity-100 transition-opacity" title={bank.name} />
                         )}
-                        <span className={`text-[11px] font-black ${urgent ? 'text-red-700 underline' : 'text-[#8B0000]'}`}>
-                          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(property?.value || 0)}
+                        <span className={`text-[11px] font-black ${urgent ? 'text-red-700 underline' : 'text-slate-600'}`}>
+                          {formatCurrency(property?.value || 0)}
                         </span>
                      </div>
                      <div className="flex items-center gap-1.5">
                         <button 
                           onClick={(e) => { e.stopPropagation(); onViewLead?.(lead); }} 
                           className="bg-[#8B0000] text-white p-1.5 rounded-lg shadow-sm hover:scale-110 transition-transform"
-                          title="Tratar Lead"
                         >
                           <Zap size={10} />
                         </button>
@@ -154,11 +166,6 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
               </div>
             );
           })}
-          {phaseLeads.length === 0 && (
-             <div className="py-10 border-2 border-dashed border-slate-200 rounded-3xl flex items-center justify-center opacity-20">
-                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Vazio</p>
-             </div>
-          )}
         </div>
       </div>
     );
