@@ -1,9 +1,9 @@
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Plus, Edit2, Trash2, Search, X, Image as ImageIcon, 
   Eye, Landmark, Upload, Building2,
-  Wallet, TrendingUp, Briefcase, MapPin, AlertCircle, Lock
+  Wallet, Briefcase, MapPin, AlertCircle, Lock
 } from 'lucide-react';
 import { LeadPhase, ConstructionCompany, Lead, Property, Broker, Client, Bank } from '../types';
 
@@ -61,67 +61,46 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
     const fetchMunicipios = async () => {
       try {
         const response = await fetch("https://servicodados.ibge.gov.br/api/v1/localidades/municipios");
-        const dados = await response.json();
-        const formatados = dados.map((item: any) => ({
+        const rawData = await response.json();
+        const formatados = rawData.map((item: any) => ({
           municipio: item.nome.toUpperCase(),
           estado: item.microrregiao.mesorregiao.UF.nome.toUpperCase(),
           uf: item.microrregiao.mesorregiao.UF.sigla.toUpperCase()
         }));
         setMunicipiosIBGE(formatados);
       } catch (e) {
-        console.error("FALHA AO CONECTAR COM API IBGE", e);
+        console.error("ERRO AO CARREGAR IBGE:", e);
       }
     };
     fetchMunicipios();
   }, []);
 
-  // Fix: Added filteredData to allow searching within the CRUD list
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
     const term = searchTerm.toUpperCase();
     return data.filter(item => {
-      return (
-        (item.name && item.name.toUpperCase().includes(term)) ||
-        (item.title && item.title.toUpperCase().includes(term)) ||
-        (item.taxId && item.taxId.toUpperCase().includes(term)) ||
-        (item.creci && item.creci.toUpperCase().includes(term)) ||
-        (item.city && item.city.toUpperCase().includes(term))
-      );
+      const values = Object.values(item).join(' ').toUpperCase();
+      return values.includes(term);
     });
   }, [data, searchTerm]);
 
-  // Fix: Implemented handleQuickAdd to handle rapid entity creation from the selection modal
   const handleQuickAdd = async (qType: string, qData: any) => {
     let service;
     let field = '';
-    
     switch(qType) {
       case 'company': service = companyService; field = 'constructionCompanyId'; break;
       case 'property': service = propertyService; field = 'propertyId'; break;
       case 'broker': service = brokerService; field = 'brokerId'; break;
       case 'bank': service = bankService; field = 'bankId'; break;
     }
-
     if (service) {
       try {
         const result = await service.create(qData);
         setFormData(prev => ({ ...prev, [field]: result.id }));
         setIsQuickAddOpen(null);
       } catch (e) {
-        console.error("Quick add failed", e);
         alert("FALHA AO CADASTRAR ITEM RAPIDAMENTE.");
       }
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!isAdmin) {
-      alert("AÇÃO RESTRITA: APENAS ADMINISTRADORES PODEM EXCLUIR REGISTROS.");
-      return;
-    }
-    if (confirm(`DESEJA REALMENTE EXCLUIR ESTE ${title.slice(0,-1).toUpperCase()}?`)) {
-      if (onDelete) await onDelete(id);
-      if (viewingItem?.id === id) setIsViewModalOpen(false);
     }
   };
 
@@ -149,16 +128,18 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
     setIsModalOpen(true);
   };
 
-  const handleOpenViewModal = (item: any) => {
-    setViewingItem(item);
-    setIsViewModalOpen(true);
-  };
-
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     let finalData = { ...formData };
     
+    // Forçar uppercase em todos os campos de string
+    Object.keys(finalData).forEach(key => {
+      if (typeof finalData[key] === 'string') {
+        finalData[key] = finalData[key].toUpperCase();
+      }
+    });
+
     if (type === 'property') {
       const { type: pType, neighborhood, city, state } = finalData;
       const autoTitle = `${pType || ''} ${neighborhood || ''} ${city || ''} ${state || ''}`.trim().replace(/\s+/g, ' ');
@@ -171,7 +152,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
         setIsModalOpen(false);
       }
     } catch (err) {
-      alert("ERRO AO SALVAR DADOS.");
+      alert("ERRO AO SALVAR DADOS NO FIRESTORE.");
     } finally {
       setLoading(false);
     }
@@ -179,15 +160,16 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
 
   const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
-  // Componente de Input Inteligente para Cidade/UF
+  // Componente Reutilizável de Input de Cidade com Lista Inteligente
   const SmartCityInput = ({ value, ufValue, onSelect, label }: { value: string, ufValue: string, onSelect: (city: string, uf: string) => void, label: string }) => {
     const [search, setSearch] = useState(value || '');
     const [isOpen, setIsOpen] = useState(false);
 
     const filtered = useMemo(() => {
       if (search.length < 2) return [];
-      return municipiosIBGE.filter(m => m.municipio.includes(search.toUpperCase())).slice(0, 15);
-    }, [search]);
+      const term = search.toUpperCase();
+      return municipiosIBGE.filter(m => m.municipio.includes(term)).slice(0, 15);
+    }, [search, municipiosIBGE]);
 
     return (
       <div className="space-y-1.5 relative">
@@ -195,25 +177,33 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
         <div className="relative">
           <input 
             type="text" 
-            placeholder={`BUSCAR ${label}...`}
+            placeholder={`DIGITE A ${label}...`}
             value={search} 
-            onChange={e => { setSearch(e.target.value.toUpperCase()); setIsOpen(true); }}
+            onInput={e => {
+              const el = e.target as HTMLInputElement;
+              el.value = el.value.toUpperCase();
+              setSearch(el.value);
+              setIsOpen(true);
+            }}
             onFocus={() => setIsOpen(true)}
-            className="w-full border border-gray-200 rounded-xl p-3.5 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900 font-bold uppercase shadow-sm"
+            className="w-full border border-gray-200 rounded-xl p-3.5 text-sm font-bold uppercase outline-none focus:ring-2 focus:ring-[#8B0000] bg-white text-gray-900 shadow-sm"
           />
           {isOpen && filtered.length > 0 && (
-            <div className="absolute z-[150] w-full bg-white border border-gray-100 rounded-2xl shadow-2xl mt-1 max-h-60 overflow-y-auto divide-y divide-gray-50">
+            <div className="absolute z-[200] w-full bg-white border border-gray-100 rounded-2xl shadow-2xl mt-1 max-h-60 overflow-y-auto divide-y divide-gray-50 border-t-0">
               {filtered.map((item, idx) => (
                 <div 
                   key={idx} 
-                  className="px-5 py-3 hover:bg-red-50 cursor-pointer text-[10px] font-black text-slate-700 uppercase"
-                  onClick={() => {
+                  className="px-5 py-3 hover:bg-red-50 cursor-pointer text-[10px] font-black text-slate-700 uppercase flex justify-between items-center group"
+                  onMouseDown={(e) => {
+                    // Usar onMouseDown para disparar antes do onBlur
+                    e.preventDefault();
                     onSelect(item.municipio, item.uf);
                     setSearch(item.municipio);
                     setIsOpen(false);
                   }}
                 >
-                  {item.municipio} - {item.estado} ({item.uf})
+                  <span>{item.municipio} - {item.estado}</span>
+                  <span className="text-gray-300 group-hover:text-[#8B0000]">{item.uf}</span>
                 </div>
               ))}
             </div>
@@ -315,7 +305,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
               type="text" 
               placeholder={`FILTRAR...`} 
               value={searchTerm} 
-              onChange={(e) => setSearchTerm(e.target.value.toUpperCase())} 
+              onInput={e => setSearchTerm((e.target as HTMLInputElement).value.toUpperCase())}
               className="pl-12 pr-6 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#8B0000] w-full md:w-80 bg-white text-gray-900 font-bold uppercase shadow-sm" 
             />
           </div>
@@ -357,11 +347,27 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
                     <td className="px-8 py-5 uppercase text-gray-500">{item.city}/{item.state}</td>
                   </>
                 )}
+                {title === 'Corretores' && (
+                  <>
+                    <td className="px-8 py-5 font-bold uppercase">{item.name}</td>
+                    <td className="px-8 py-5 uppercase text-gray-500">{item.creci}</td>
+                    <td className="px-8 py-5 font-bold uppercase">{item.commissionRate}%</td>
+                    <td className="px-8 py-5 uppercase text-gray-500">{item.phone}</td>
+                  </>
+                )}
+                {title === 'Construtoras' && (
+                  <>
+                    <td className="px-8 py-5 font-bold uppercase">{item.name}</td>
+                    <td className="px-8 py-5 uppercase text-gray-500">{item.cnpj}</td>
+                    <td className="px-8 py-5 font-bold uppercase">{item.city} / {item.state}</td>
+                    <td className="px-8 py-5 uppercase text-gray-500">{item.phone}</td>
+                  </>
+                )}
                 <td className="px-8 py-5 text-right whitespace-nowrap">
                   <div className="flex items-center justify-end space-x-2">
-                    <button onClick={() => handleOpenViewModal(item)} className="p-2 text-gray-400 hover:text-[#8B0000]"><Eye size={18} /></button>
+                    <button onClick={() => { setViewingItem(item); setIsViewModalOpen(true); }} className="p-2 text-gray-400 hover:text-[#8B0000]"><Eye size={18} /></button>
                     <button onClick={() => handleOpenModal(item)} className="p-2 text-gray-400 hover:text-black"><Edit2 size={18} /></button>
-                    {isAdmin && <button onClick={() => handleDelete(item.id)} className="p-2 text-gray-400 hover:text-red-600"><Trash2 size={18} /></button>}
+                    {isAdmin && <button onClick={() => onDelete && onDelete(item.id)} className="p-2 text-gray-400 hover:text-red-600"><Trash2 size={18} /></button>}
                   </div>
                 </td>
               </tr>
@@ -374,9 +380,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-md overflow-y-auto">
           <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col my-8 overflow-hidden">
             <div className="bg-[#8B0000] px-10 py-8 flex items-center justify-between text-white">
-              <div>
-                 <h3 className="font-black uppercase tracking-widest text-sm">{editingItem ? 'EDITAR' : 'CADASTRAR'} {title.slice(0,-1).toUpperCase()}</h3>
-              </div>
+              <h3 className="font-black uppercase tracking-widest text-sm">{editingItem ? 'EDITAR' : 'CADASTRAR'} {title.slice(0,-1).toUpperCase()}</h3>
               <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={28} /></button>
             </div>
             <div className="flex-1 overflow-y-auto p-10">
@@ -398,13 +402,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
         <QuickAddModal 
           type={isQuickAddOpen} 
           onClose={() => setIsQuickAddOpen(null)} 
-          onSave={(d: any) => {
-             const dataWithUpper = Object.keys(d).reduce((acc: any, key) => {
-                acc[key] = typeof d[key] === 'string' ? d[key].toUpperCase() : d[key];
-                return acc;
-             }, {});
-             handleQuickAdd(isQuickAddOpen, dataWithUpper);
-          }}
+          onSave={(d: any) => handleQuickAdd(isQuickAddOpen, d)}
           companies={companies}
           municipiosIBGE={municipiosIBGE}
           SmartCityInput={SmartCityInput}
@@ -414,7 +412,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
   );
 };
 
-const QuickAddModal = ({ type, onClose, onSave, companies, municipiosIBGE, SmartCityInput }: any) => {
+const QuickAddModal = ({ type, onClose, onSave, companies, SmartCityInput }: any) => {
   const [data, setData] = useState<any>({ type: "APARTAMENTO", photos: [], value: 0 });
   
   return (
@@ -451,7 +449,6 @@ const QuickAddModal = ({ type, onClose, onSave, companies, municipiosIBGE, Smart
                 <SmartCityInput label="CIDADE" value={data.city} ufValue={data.state} onSelect={(c:any, u:any) => setData({...data, city: c, state: u})} />
                 <InputField label="UF" value={data.state} onChange={(v: string) => setData({...data, state: v})} />
               </div>
-              <SelectField label="CONSTRUTORA" value={data.constructionCompanyId} options={companies?.map((c:any) => ({id: c.id, label: c.name})) || []} onChange={(v: string) => setData({...data, constructionCompanyId: v})} onQuickAdd={() => {}} />
             </>
           )}
         </div>
@@ -469,19 +466,18 @@ const PhotoUploader = ({ photos, onUpdate }: any) => {
     <div className="space-y-3">
       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">FOTOS DO ATIVO</label>
       <div className="flex gap-2">
-        <input type="text" placeholder="URL DA IMAGEM..." className="flex-1 border border-gray-200 rounded-xl p-3 text-sm font-bold uppercase outline-none" value={url} onChange={e => setUrl(e.target.value.toUpperCase())} />
+        <input 
+          type="text" 
+          placeholder="URL DA IMAGEM..." 
+          className="flex-1 border border-gray-200 rounded-xl p-3 text-sm font-bold uppercase outline-none" 
+          value={url} 
+          onInput={e => setUrl((e.target as HTMLInputElement).value.toUpperCase())}
+        />
         <button type="button" onClick={() => { if(url) { onUpdate([...photos, url]); setUrl(''); } }} className="bg-black text-white px-4 rounded-xl text-[10px] font-black uppercase">ADD</button>
       </div>
     </div>
   );
 };
-
-const DetailBlock = ({ label, value, className = "", valueClass = "text-lg" }: any) => (
-  <div className={`space-y-1 ${className} uppercase`}>
-    <label className="text-[10px] font-black text-gray-400 tracking-widest block">{label}</label>
-    <p className={`text-gray-900 font-black tracking-tighter uppercase ${valueClass}`}>{value || '---'}</p>
-  </div>
-);
 
 const InputField = ({ label, value, onChange, type = "text", step }: any) => (
   <div className="space-y-1.5">
@@ -489,7 +485,13 @@ const InputField = ({ label, value, onChange, type = "text", step }: any) => (
     <input 
       type={type} step={step} placeholder={`INFORME ${label}...`} 
       value={value || ''} 
-      onChange={e => onChange(type === 'number' ? e.target.value : e.target.value.toUpperCase())} 
+      onInput={e => {
+        const el = e.target as HTMLInputElement;
+        if (type !== 'number') {
+          el.value = el.value.toUpperCase();
+        }
+        onChange(type === 'number' ? Number(el.value) : el.value);
+      }}
       className="w-full border border-gray-200 rounded-xl p-3.5 text-sm font-bold outline-none focus:ring-2 focus:ring-[#8B0000] bg-white text-gray-900 uppercase shadow-sm"
       required={type !== 'number'}
     />
