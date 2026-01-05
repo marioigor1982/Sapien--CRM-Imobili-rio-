@@ -7,8 +7,8 @@
     <title>Sapien CRM</title>
     <link rel="icon" href="https://i.postimg.cc/5NTGwxd0/LOGO_SISTEMMA.jpg" type="image/jpeg">
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries,typography"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=Noto+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Noto+Sans:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1" rel="stylesheet" />
     <script>
         tailwind.config = {
             darkMode: "class",
@@ -18,20 +18,50 @@
                         "primary": "#ea2a33",
                         "primary-dark": "#B71C1C",
                         "background-light": "#f8f6f6",
-                        "background-dark": "#0F172A",
-                        "surface-light": "#FFFFFF",
-                        "surface-dark": "#1E293B",
+                        "background-dark": "#211111",
                     },
                     fontFamily: {
                         "display": ["Space Grotesk", "sans-serif"],
                         "body": ["Noto Sans", "sans-serif"],
                         "sans": ["Inter", "sans-serif"]
                     },
+                    animation: {
+                        'gradient-slow': 'gradient-shift 8s ease infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        'gradient-shift': {
+                            '0%, 100%': { 'background-position': '0% 50%' },
+                            '50%': { 'background-position': '100% 50%' }
+                        },
+                        'float': {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
                 },
             },
         }
     </script>
     <style>
+        .smoky-glass {
+            background: rgba(22, 17, 17, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        
+        .input-glass {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .bg-animated {
+            background: linear-gradient(-45deg, #ea2a33, #211111, #8f8f8f, #211111);
+            background-size: 400% 400%;
+        }
+
         /* GLOBAL UPPERCASE FORCE */
         input:not([type="email"]), textarea, select {
             text-transform: uppercase !important;
@@ -64,16 +94,11 @@
             border-bottom: 1px solid #f1f5f9;
         }
 
-        .lista-municipios li:last-child {
-            border-bottom: none;
-        }
-
         .lista-municipios li:hover {
             background: #fef2f2;
             color: #8b0000;
         }
 
-        /* SAP Fiori inspired scrollbar */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -84,9 +109,6 @@
         ::-webkit-scrollbar-thumb {
             background: #CBD5E1;
             border-radius: 20px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #ea2a33;
         }
     </style>
 <script type="importmap">
