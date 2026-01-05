@@ -1,21 +1,34 @@
 
 export enum LeadPhase {
-  ABERTURA_CREDITO = 'Abertura de Crédito',
+  SIMULACAO_COLETA = 'Simulação e Coleta de Documentos',
   APROVACAO_CREDITO = 'Aprovação de Crédito',
   VISITA_IMOVEL = 'Visita ao Imóvel',
-  ENGENHARIA = 'Engenharia',
+  ENGENHARIA = 'Engenharia/Vistoria',
   EMISSAO_CONTRATO = 'Emissão do Contrato',
-  ASSINATURA_CONTRATO = 'Assinatura de Contrato'
+  ASSINATURA_CONTRATO = 'Assinatura do Contrato',
+  REGISTRO_CARTORIO = 'Registro em Cartório',
+  LIBERACAO_RECURSOS = 'Liberação dos Recursos'
 }
 
 export const PHASES_ORDER = [
-  LeadPhase.ABERTURA_CREDITO,
+  LeadPhase.SIMULACAO_COLETA,
   LeadPhase.APROVACAO_CREDITO,
   LeadPhase.VISITA_IMOVEL,
   LeadPhase.ENGENHARIA,
   LeadPhase.EMISSAO_CONTRATO,
-  LeadPhase.ASSINATURA_CONTRATO
+  LeadPhase.ASSINATURA_CONTRATO,
+  LeadPhase.REGISTRO_CARTORIO,
+  LeadPhase.LIBERACAO_RECURSOS
 ];
+
+export enum LeadStatus {
+  CONCLUIDO = 'Concluído',
+  PENDENTE = 'Pendente',
+  CANCELADO = 'Cancelado',
+  EM_ANDAMENTO = 'Em andamento',
+  URGENTE = 'Urgente',
+  REPROVADO = 'Reprovado'
+}
 
 export enum MuralStatus {
   CRITICO = 'Crítico',
@@ -34,12 +47,12 @@ export interface MuralFile {
 }
 
 export interface MuralReply {
-  id: string; // ID único para a interação para indexação
+  id: string;
   autor: string;
   texto: string;
   timestamp: string;
   arquivo?: string;
-  likes?: string[]; // Array de emails de quem curtiu
+  likes?: string[];
 }
 
 export interface MuralMessage {
@@ -53,10 +66,39 @@ export interface MuralMessage {
   createdAt: string;
   timestamp_ultima_interacao: any; 
   isSeenGlobal?: boolean;
-  lido_por?: string[]; // Array de emails que visualizaram
-  likes?: string[]; // Array de emails de quem curtiu o post principal
+  lido_por?: string[];
+  likes?: string[];
   arquivos?: MuralFile[];
   interacoes: MuralReply[];
+}
+
+export interface Lead {
+  id: string;
+  clientId: string;
+  brokerId: string;
+  propertyId: string;
+  bankId: string;
+  constructionCompanyId: string;
+  currentPhase: LeadPhase;
+  status: LeadStatus;
+  createdAt: string;
+  internalMessage?: string;
+  
+  // Dados específicos de fases
+  motive?: string;
+  appraisalValue?: number;
+  visitDate?: string;
+  inspectionDate?: string;
+  registryDate?: string;
+  
+  history: { 
+    phase: LeadPhase; 
+    startDate: string; 
+    endDate?: string; 
+    status: LeadStatus;
+    motive?: string;
+    appraisalValue?: number;
+  }[];
 }
 
 export interface Client {
@@ -119,19 +161,6 @@ export interface ConstructionCompany {
   neighborhood: string;
   city: string;
   state: string;
-}
-
-export interface Lead {
-  id: string;
-  clientId: string;
-  brokerId: string;
-  propertyId: string;
-  bankId: string;
-  constructionCompanyId: string;
-  currentPhase: LeadPhase;
-  createdAt: string;
-  internalMessage?: string;
-  history: { phase: LeadPhase; date: string; message?: string }[];
 }
 
 export interface ApprovalRequest {

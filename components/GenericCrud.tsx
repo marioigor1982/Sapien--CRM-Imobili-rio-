@@ -166,7 +166,8 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
     let recebido = 0;
 
     const aReceberPhases = [
-      LeadPhase.ABERTURA_CREDITO,
+      // Fixed ABERTURA_CREDITO to SIMULACAO_COLETA
+      LeadPhase.SIMULACAO_COLETA,
       LeadPhase.APROVACAO_CREDITO,
       LeadPhase.VISITA_IMOVEL,
       LeadPhase.ENGENHARIA,

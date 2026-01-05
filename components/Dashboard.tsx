@@ -16,7 +16,8 @@ interface DashboardProps {
 }
 
 const PHASE_COLORS: Record<string, string> = {
-  [LeadPhase.ABERTURA_CREDITO]: '#3B82F6',
+  // Fixed ABERTURA_CREDITO to SIMULACAO_COLETA
+  [LeadPhase.SIMULACAO_COLETA]: '#3B82F6',
   [LeadPhase.APROVACAO_CREDITO]: '#22C55E',
   [LeadPhase.VISITA_IMOVEL]: '#F97316',
   [LeadPhase.ENGENHARIA]: '#0EA5E9',
@@ -41,13 +42,15 @@ const Dashboard: React.FC<DashboardProps> = ({ leads, clients, properties, broke
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
   };
 
-  const leadsInAbertura = leads.filter(l => l.currentPhase === LeadPhase.ABERTURA_CREDITO);
+  // Fixed ABERTURA_CREDITO to SIMULACAO_COLETA
+  const leadsInAbertura = leads.filter(l => l.currentPhase === LeadPhase.SIMULACAO_COLETA);
   const totalValueAbertura = leadsInAbertura.reduce((acc, lead) => {
     const prop = properties.find(p => p.id === lead.propertyId);
     return acc + (Number(prop?.value) || 0);
   }, 0);
 
-  const leadsEmAprovacao = leads.filter(l => l.currentPhase !== LeadPhase.ABERTURA_CREDITO);
+  // Fixed ABERTURA_CREDITO to SIMULACAO_COLETA
+  const leadsEmAprovacao = leads.filter(l => l.currentPhase !== LeadPhase.SIMULACAO_COLETA);
   const totalValueEmAprovacao = leadsEmAprovacao.reduce((acc, lead) => {
     const prop = properties.find(p => p.id === lead.propertyId);
     return acc + (Number(prop?.value) || 0);

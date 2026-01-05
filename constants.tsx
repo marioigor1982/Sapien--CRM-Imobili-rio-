@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { LayoutDashboard, Trello, List, Users, Briefcase, Home, Landmark, Building2 } from 'lucide-react';
-import { Client, Broker, Property, Bank, ConstructionCompany, Lead, LeadPhase } from './types';
+// Added LeadStatus to imports and fixed LeadPhase references
+import { Client, Broker, Property, Bank, ConstructionCompany, Lead, LeadPhase, LeadStatus } from './types';
 
 export const INITIAL_CLIENTS: Client[] = [
   { id: 'c1', name: 'João Silva', taxId: '123.456.789-00', phone: '(11) 98888-7777', email: 'joao@email.com', income: 8500, status: 'Ativo' },
@@ -78,9 +79,12 @@ export const INITIAL_LEADS: Lead[] = [
     propertyId: 'p1', 
     bankId: 'b1', 
     constructionCompanyId: 'co1', 
-    currentPhase: LeadPhase.ABERTURA_CREDITO, 
+    // Fixed ABERTURA_CREDITO to SIMULACAO_COLETA
+    currentPhase: LeadPhase.SIMULACAO_COLETA, 
+    status: LeadStatus.EM_ANDAMENTO,
     createdAt: new Date().toISOString(),
-    history: [{ phase: LeadPhase.ABERTURA_CREDITO, date: new Date().toISOString() }]
+    // Fixed history object property names and added missing status
+    history: [{ phase: LeadPhase.SIMULACAO_COLETA, startDate: new Date().toISOString(), status: LeadStatus.EM_ANDAMENTO }]
   }
 ];
 

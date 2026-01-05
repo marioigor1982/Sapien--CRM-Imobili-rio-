@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Client, Broker, Property, Bank, ConstructionCompany, Lead, 
-  ViewType, LeadPhase, PHASES_ORDER, ApprovalRequest, MuralMessage
+  ViewType, LeadPhase, PHASES_ORDER, ApprovalRequest, MuralMessage, LeadStatus
 } from './types';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -12,6 +12,7 @@ import LeadTable from './components/LeadTable';
 import Login from './components/Login';
 import GenericCrud from './components/GenericCrud';
 import Mural from './components/Mural';
+import LeadDetailModal from './components/LeadDetailModal';
 import { auth, db } from './firebase';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { collection, onSnapshot, query, where, addDoc, updateDoc, doc, getDoc, orderBy, limit, deleteDoc, writeBatch } from 'firebase/firestore';
@@ -40,6 +41,8 @@ const App: React.FC = () => {
   const [pendingApprovals, setPendingApprovals] = useState<ApprovalRequest[]>([]);
   const [processedApprovals, setProcessedApprovals] = useState<ApprovalRequest[]>([]);
   const [muralMessages, setMuralMessages] = useState<MuralMessage[]>([]);
+  
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
   const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);
   const prevMuralStats = useRef<{ [key: string]: number }>({});
@@ -61,7 +64,6 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!isAuthenticated || !user) return;
 
-    // LISTEN DO MURAL COM LÓGICA DE ALERTA NO SINO (REFINADA)
     const qMural = query(collection(db, "mural"), orderBy("timestamp_ultima_interacao", "desc"), limit(40));
     const unsubMural = onSnapshot(qMural, (snap) => {
       const newMessages = snap.docs.map(d => ({ id: d.id, ...d.data() } as MuralMessage));
@@ -71,7 +73,6 @@ const App: React.FC = () => {
         const lastCount = prevMuralStats.current[msg.id];
         const isAuthor = msg.criador_id === user.email;
 
-        // Se o contador de interações mudou e o usuário logado não é quem comentou por último
         if (lastCount !== undefined && currentCount > lastCount) {
           const lastIt = msg.interacoes[currentCount - 1];
           if (lastIt && lastIt.autor !== user.email) {
@@ -79,9 +80,7 @@ const App: React.FC = () => {
           }
         }
         
-        // Se a mensagem é nova e o usuário não é o autor
         if (lastCount === undefined && !isAuthor) {
-          // Apenas se a mensagem tiver sido criada nos últimos 10 segundos (para não alertar histórico antigo no primeiro load)
           const createdTime = new Date(msg.createdAt).getTime();
           const now = new Date().getTime();
           if (now - createdTime < 10000) {
@@ -114,10 +113,14 @@ const App: React.FC = () => {
     await updateDoc(doc(db, "approval_requests", request.id), { status, isSeen: false });
   };
 
+  const handleUpdateLead = async (leadId: string, updatedLead: any) => {
+    await leadService.update(leadId, updatedLead);
+    showNotification("Lead Cloud atualizado com sucesso!");
+  };
+
   if (isLoading) return <div className="h-screen flex items-center justify-center bg-gray-50"><div className="w-8 h-8 border-4 border-[#ea2a33] border-t-transparent rounded-full animate-spin"></div></div>;
   if (!isAuthenticated) return <Login onLogin={() => setIsAuthenticated(true)} />;
 
-  // MENSAGENS NÃO LIDAS PELO USUÁRIO ATUAL
   const unreadMuralCount = muralMessages.filter(m => !m.lido_por?.includes(user?.email || '')).length;
 
   return (
@@ -135,7 +138,28 @@ const App: React.FC = () => {
         />
         <main className="flex-1 overflow-auto bg-white">
           {currentView === 'Dashboard' && <div className="p-8 bg-[#F3F4F6] min-h-full"><Dashboard leads={leads} clients={clients} properties={properties} brokers={brokers} /></div>}
-          {currentView === 'Kanban' && <div className="p-8 bg-[#F3F4F6] min-h-full"><KanbanBoard leads={leads} clients={clients} brokers={brokers} properties={properties} updatePhase={() => {}} isAdmin={isAdmin} /></div>}
+          {currentView === 'Kanban' && (
+            <div className="p-8 bg-[#F3F4F6] min-h-full">
+              <KanbanBoard 
+                leads={leads} clients={clients} brokers={brokers} properties={properties} 
+                updatePhase={(id, phase) => handleUpdateLead(id, { currentPhase: phase })} 
+                onViewLead={setSelectedLead}
+                isAdmin={isAdmin} 
+              />
+            </div>
+          )}
+          {currentView === 'List' && (
+            <div className="p-8 bg-[#F3F4F6] min-h-full">
+              <LeadTable 
+                leads={leads} clients={clients} brokers={brokers} properties={properties} banks={banks} companies={companies}
+                updatePhase={(id, phase) => handleUpdateLead(id, { currentPhase: phase })}
+                onAddLead={() => setCurrentView('Dashboard')}
+                onEditLead={setSelectedLead}
+                onDeleteLead={leadService.remove}
+                onViewLead={setSelectedLead}
+              />
+            </div>
+          )}
           {currentView === 'Mural' && <Mural messages={muralMessages} user={user} />}
           {currentView === 'Clientes' && <div className="p-8 bg-[#F3F4F6] min-h-full"><GenericCrud title="Clientes" data={clients} type="client" onSave={d => d.id ? clientService.update(d.id, d) : clientService.create(d)} onDelete={clientService.remove} isAdmin={isAdmin} /></div>}
           {currentView === 'Corretores' && <div className="p-8 bg-[#F3F4F6] min-h-full"><GenericCrud title="Corretores" data={brokers} type="broker" onSave={d => d.id ? brokerService.update(d.id, d) : brokerService.create(d)} onDelete={brokerService.remove} isAdmin={isAdmin} /></div>}
@@ -143,6 +167,20 @@ const App: React.FC = () => {
           {currentView === 'Bancos' && <div className="p-8 bg-[#F3F4F6] min-h-full"><GenericCrud title="Bancos" data={banks} type="bank" onSave={d => d.id ? bankService.update(d.id, d) : bankService.create(d)} onDelete={bankService.remove} isAdmin={isAdmin} /></div>}
           {currentView === 'Construtoras' && <div className="p-8 bg-[#F3F4F6] min-h-full"><GenericCrud title="Construtoras" data={companies} type="company" onSave={d => d.id ? companyService.update(d.id, d) : companyService.create(d)} onDelete={companyService.remove} isAdmin={isAdmin} /></div>}
         </main>
+
+        {selectedLead && (
+          <LeadDetailModal 
+            lead={selectedLead}
+            client={clients.find(c => c.id === selectedLead.clientId)}
+            property={properties.find(p => p.id === selectedLead.propertyId)}
+            bank={banks.find(b => b.id === selectedLead.bankId)}
+            onClose={() => setSelectedLead(null)}
+            onUpdate={async (updatedLead) => {
+              await leadService.update(updatedLead.id, updatedLead);
+              setSelectedLead(null);
+            }}
+          />
+        )}
 
         {notification && (
           <div className="fixed bottom-8 right-8 z-[100] animate-in slide-in-from-right-10">
