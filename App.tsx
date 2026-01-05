@@ -13,6 +13,7 @@ import Login from './components/Login';
 import GenericCrud from './components/GenericCrud';
 import Mural from './components/Mural';
 import LeadDetailModal from './components/LeadDetailModal';
+import LeadFormModal from './components/LeadFormModal';
 import { auth, db } from './firebase';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { collection, onSnapshot, query, where, addDoc, updateDoc, doc, getDoc, orderBy, limit, deleteDoc, writeBatch } from 'firebase/firestore';
@@ -43,6 +44,7 @@ const App: React.FC = () => {
   const [muralMessages, setMuralMessages] = useState<MuralMessage[]>([]);
   
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [isLeadFormOpen, setIsLeadFormOpen] = useState(false);
 
   const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);
   const prevMuralStats = useRef<{ [key: string]: number }>({});
@@ -118,6 +120,12 @@ const App: React.FC = () => {
     showNotification("Lead Cloud atualizado com sucesso!");
   };
 
+  const handleCreateLead = async (leadData: Partial<Lead>) => {
+    await leadService.create(leadData);
+    showNotification("Novo Lead iniciado com sucesso no Pipeline!");
+    setIsLeadFormOpen(false);
+  };
+
   if (isLoading) return <div className="h-screen flex items-center justify-center bg-gray-50"><div className="w-8 h-8 border-4 border-[#ea2a33] border-t-transparent rounded-full animate-spin"></div></div>;
   if (!isAuthenticated) return <Login onLogin={() => setIsAuthenticated(true)} />;
 
@@ -143,7 +151,10 @@ const App: React.FC = () => {
               <KanbanBoard 
                 leads={leads} clients={clients} brokers={brokers} properties={properties} banks={banks}
                 updatePhase={(id, phase) => handleUpdateLead(id, { currentPhase: phase })} 
+                onAddLead={() => setIsLeadFormOpen(true)}
                 onViewLead={setSelectedLead}
+                onEditLead={setSelectedLead}
+                onDeleteLead={leadService.remove}
                 isAdmin={isAdmin} 
               />
             </div>
@@ -153,7 +164,7 @@ const App: React.FC = () => {
               <LeadTable 
                 leads={leads} clients={clients} brokers={brokers} properties={properties} banks={banks} companies={companies}
                 updatePhase={(id, phase) => handleUpdateLead(id, { currentPhase: phase })}
-                onAddLead={() => setCurrentView('Dashboard')}
+                onAddLead={() => setIsLeadFormOpen(true)}
                 onEditLead={setSelectedLead}
                 onDeleteLead={leadService.remove}
                 onViewLead={setSelectedLead}
@@ -167,6 +178,17 @@ const App: React.FC = () => {
           {currentView === 'Bancos' && <div className="p-8 bg-[#F3F4F6] min-h-full"><GenericCrud title="Bancos" data={banks} type="bank" onSave={d => d.id ? bankService.update(d.id, d) : bankService.create(d)} onDelete={bankService.remove} isAdmin={isAdmin} /></div>}
           {currentView === 'Construtoras' && <div className="p-8 bg-[#F3F4F6] min-h-full"><GenericCrud title="Construtoras" data={companies} type="company" onSave={d => d.id ? companyService.update(d.id, d) : companyService.create(d)} onDelete={companyService.remove} isAdmin={isAdmin} /></div>}
         </main>
+
+        <LeadFormModal 
+          isOpen={isLeadFormOpen}
+          onClose={() => setIsLeadFormOpen(false)}
+          onSave={handleCreateLead}
+          clients={clients}
+          properties={properties}
+          brokers={brokers}
+          banks={banks}
+          companies={companies}
+        />
 
         {selectedLead && (
           <LeadDetailModal 

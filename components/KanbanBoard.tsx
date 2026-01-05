@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Lead, LeadPhase, PHASES_ORDER, Client, Broker, Property, LeadStatus, Bank } from '../types';
-import { MapPin, Plus, Trash2, MessageSquare, AlertTriangle, Building2, Landmark } from 'lucide-react';
+import { MapPin, Plus, Trash2, MessageSquare, AlertTriangle, Building2, Landmark, Eye, Edit2 } from 'lucide-react';
 
 interface KanbanBoardProps {
   leads: Lead[];
@@ -18,19 +18,22 @@ interface KanbanBoardProps {
 }
 
 const KanbanBoard: React.FC<KanbanBoardProps> = ({ 
-  leads, clients, brokers, properties, banks, updatePhase, onAddLead, onViewLead, onDeleteLead, isAdmin 
+  leads, clients, brokers, properties, banks, updatePhase, onAddLead, onEditLead, onViewLead, onDeleteLead, isAdmin 
 }) => {
   const [draggedLeadId, setDraggedLeadId] = useState<string | null>(null);
 
   const handleDragStart = (e: React.DragEvent, leadId: string) => {
     setDraggedLeadId(leadId);
     e.dataTransfer.setData('leadId', leadId);
+    e.dataTransfer.effectAllowed = 'move';
   };
 
   const handleDrop = (e: React.DragEvent, targetPhase: LeadPhase) => {
     e.preventDefault();
     const leadId = e.dataTransfer.getData('leadId') || draggedLeadId;
-    if (leadId) updatePhase(leadId, targetPhase);
+    if (leadId) {
+      updatePhase(leadId, targetPhase);
+    }
     setDraggedLeadId(null);
   };
 
@@ -62,16 +65,18 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     return (
       <div 
         key={phase} 
-        className="flex flex-col min-w-[300px] bg-gray-50/50 rounded-[2rem] border border-gray-200 overflow-hidden shadow-sm"
-        onDragOver={(e) => e.preventDefault()}
+        className="flex flex-col min-w-[280px] bg-slate-50/50 rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm"
+        onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
         onDrop={(e) => handleDrop(e, phase)}
       >
-        <div className="p-4 bg-white border-b border-gray-100 flex items-center justify-between">
-          <h4 className="font-black text-[9px] text-gray-900 uppercase tracking-widest truncate" title={phase}>{phase}</h4>
-          <span className="bg-[#8B0000] text-white px-2 py-0.5 rounded-lg text-[9px] font-black">{phaseLeads.length}</span>
+        <div className="p-5 bg-white border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h4 className="font-black text-[9px] text-slate-900 uppercase tracking-widest truncate max-w-[180px]" title={phase}>{phase}</h4>
+          </div>
+          <span className="bg-[#8B0000] text-white px-2.5 py-1 rounded-xl text-[9px] font-black shadow-lg shadow-red-100">{phaseLeads.length}</span>
         </div>
 
-        <div className="flex-1 p-3 space-y-3 overflow-y-auto max-h-[400px] scrollbar-hide">
+        <div className="flex-1 p-3 space-y-4 overflow-y-auto max-h-[450px] scrollbar-hide min-h-[150px]">
           {phaseLeads.map(lead => {
             const client = clients.find(c => c.id === lead.clientId);
             const property = properties.find(p => p.id === lead.propertyId);
@@ -84,12 +89,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 draggable 
                 onDragStart={(e) => handleDragStart(e, lead.id)}
                 onClick={() => onViewLead?.(lead)}
-                className={`bg-white rounded-2xl shadow-soft border transition-all cursor-grab active:cursor-grabbing group relative overflow-hidden ${urgent ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-100 hover:border-[#8B0000]'}`}
+                className={`bg-white rounded-3xl shadow-soft border transition-all cursor-grab active:cursor-grabbing group relative overflow-hidden transform hover:-translate-y-1 hover:shadow-xl ${urgent ? 'border-red-500 ring-2 ring-red-500/20' : 'border-slate-100 hover:border-[#8B0000]'}`}
               >
-                {/* Foto do Imóvel no Topo do Card */}
                 {property?.photos?.[0] && (
-                  <div className="h-20 w-full overflow-hidden">
-                    <img src={property.photos[0]} alt="" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                  <div className="h-24 w-full overflow-hidden relative">
+                    <img src={property.photos[0]} alt="" className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
                   </div>
                 )}
 
@@ -97,28 +102,30 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                   <div className="flex justify-between items-start mb-2">
                      <div className="flex items-center gap-2">
                        <span className="text-sm">{getStatusEmoji(lead)}</span>
-                       <h5 className={`font-black text-[11px] truncate max-w-[120px] ${urgent ? 'text-red-600' : 'text-gray-900'}`}>{client?.name}</h5>
+                       <h5 className={`font-black text-[11px] truncate max-w-[140px] uppercase tracking-tighter ${urgent ? 'text-red-600' : 'text-slate-900'}`}>{client?.name}</h5>
                      </div>
-                     {bank?.logo && (
-                       <img src={bank.logo} alt={bank.name} className="h-5 w-5 object-contain rounded" />
-                     )}
                   </div>
                   
-                  <div className="space-y-1 mb-3">
-                     <div className={`flex items-center text-[9px] font-bold ${urgent ? 'text-red-500' : 'text-gray-400'}`}>
+                  <div className="space-y-2 mb-3">
+                     <div className={`flex items-center text-[9px] font-bold ${urgent ? 'text-red-500' : 'text-slate-400'}`}>
                        <MapPin size={10} className="mr-1 shrink-0" /> 
-                       <span className="truncate">{property?.title || 'Sem Imóvel'}</span>
+                       <span className="truncate">{property?.title || 'Sem Ativo'}</span>
                      </div>
                   </div>
 
-                  <div className="pt-3 border-t border-gray-50 flex items-center justify-between">
-                     <span className={`text-[10px] font-black ${urgent ? 'text-red-700 underline' : 'text-[#8B0000]'}`}>
-                       {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(property?.value || 0)}
-                     </span>
-                     <div className="flex items-center gap-1">
-                        {lead.internalMessage && <MessageSquare size={12} className="text-[#8B0000] animate-pulse" />}
+                  <div className="pt-3 border-t border-slate-50 flex items-center justify-between">
+                     <div className="flex items-center gap-2">
+                        {bank?.logo && (
+                          <img src={bank.logo} className="h-4 w-4 object-contain opacity-60 group-hover:opacity-100 transition-opacity" title={bank.name} />
+                        )}
+                        <span className={`text-[11px] font-black ${urgent ? 'text-red-700 underline' : 'text-[#8B0000]'}`}>
+                          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(property?.value || 0)}
+                        </span>
+                     </div>
+                     <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={(e) => { e.stopPropagation(); onEditLead?.(lead); }} className="p-1.5 text-slate-300 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-all"><Edit2 size={12} /></button>
                         {isAdmin && (
-                          <button onClick={(e) => { e.stopPropagation(); onDeleteLead?.(lead.id); }} className="p-1 text-gray-300 hover:text-red-600 transition-colors">
+                          <button onClick={(e) => { e.stopPropagation(); onDeleteLead?.(lead.id); }} className="p-1.5 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
                             <Trash2 size={12} />
                           </button>
                         )}
@@ -127,36 +134,40 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 </div>
 
                 {urgent && (
-                  <div className="absolute top-2 right-2 bg-red-600 text-white px-2 py-0.5 rounded-full text-[7px] font-black uppercase flex items-center gap-1 animate-pulse z-10">
+                  <div className="absolute top-3 right-3 bg-red-600 text-white px-2.5 py-1 rounded-full text-[7px] font-black uppercase flex items-center gap-1 animate-pulse z-10 shadow-lg shadow-red-200">
                     <AlertTriangle size={8} /> Urgente
                   </div>
                 )}
               </div>
             );
           })}
+          {phaseLeads.length === 0 && (
+             <div className="py-10 border-2 border-dashed border-slate-200 rounded-3xl flex items-center justify-center opacity-20">
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Vazio</p>
+             </div>
+          )}
         </div>
       </div>
     );
   };
 
   return (
-    <div className="space-y-8 pb-10">
-      <div className="flex justify-between items-center">
+    <div className="space-y-10 pb-16">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Pipeline Cloud Sapien</h3>
-          <h2 className="text-2xl font-black text-gray-900 tracking-tighter">Fluxo Operacional (8 Fases)</h2>
+          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mb-1">Pipeline Cloud Sapien</h3>
+          <h2 className="text-3xl font-black text-slate-900 tracking-tighter leading-none">Fluxo de Conversão</h2>
         </div>
-        <button onClick={onAddLead} className="bg-[#8B0000] text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center hover:scale-105 transition-all">
-          <Plus size={16} className="mr-2" /> Novo Lead Cloud
+        <button onClick={onAddLead} className="bg-[#8B0000] text-white px-8 py-4 rounded-[2rem] font-black text-[11px] uppercase tracking-widest shadow-2xl shadow-red-200 flex items-center hover:scale-105 transition-all active:scale-95">
+          <Plus size={18} className="mr-3" /> Abrir Novo Lead Cloud
         </button>
       </div>
 
-      {/* Kanban em 2 Linhas de 4 Colunas */}
       <div className="space-y-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {PHASES_ORDER.slice(0, 4).map(phase => renderPhaseColumn(phase))}
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {PHASES_ORDER.slice(4, 8).map(phase => renderPhaseColumn(phase))}
         </div>
       </div>
