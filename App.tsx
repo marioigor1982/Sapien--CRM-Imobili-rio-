@@ -141,7 +141,7 @@ const App: React.FC = () => {
           {currentView === 'Kanban' && (
             <div className="p-8 bg-[#F3F4F6] min-h-full">
               <KanbanBoard 
-                leads={leads} clients={clients} brokers={brokers} properties={properties} 
+                leads={leads} clients={clients} brokers={brokers} properties={properties} banks={banks}
                 updatePhase={(id, phase) => handleUpdateLead(id, { currentPhase: phase })} 
                 onViewLead={setSelectedLead}
                 isAdmin={isAdmin} 
@@ -174,6 +174,7 @@ const App: React.FC = () => {
             client={clients.find(c => c.id === selectedLead.clientId)}
             property={properties.find(p => p.id === selectedLead.propertyId)}
             bank={banks.find(b => b.id === selectedLead.bankId)}
+            company={companies.find(c => c.id === selectedLead.constructionCompanyId)}
             onClose={() => setSelectedLead(null)}
             onUpdate={async (updatedLead) => {
               await leadService.update(updatedLead.id, updatedLead);
