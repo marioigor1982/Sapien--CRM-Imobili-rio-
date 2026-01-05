@@ -162,7 +162,12 @@ const App: React.FC = () => {
           {currentView === 'List' && (
             <div className="p-8 bg-[#F3F4F6] min-h-full">
               <LeadTable 
-                leads={leads} clients={clients} brokers={brokers} properties={properties} banks={banks} companies={companies}
+                leads={leads} 
+                clients={clients} 
+                brokers={brokers} 
+                properties={properties} 
+                banks={banks} 
+                companies={companies}
                 updatePhase={(id, phase) => handleUpdateLead(id, { currentPhase: phase })}
                 onAddLead={() => setIsLeadFormOpen(true)}
                 onEditLead={setSelectedLead}
@@ -172,9 +177,9 @@ const App: React.FC = () => {
             </div>
           )}
           {currentView === 'Mural' && <Mural messages={muralMessages} user={user} />}
-          {currentView === 'Clientes' && <div className="p-8 bg-[#F3F4F6] min-h-full"><GenericCrud title="Clientes" data={clients} type="client" onSave={d => d.id ? clientService.update(d.id, d) : clientService.create(d)} onDelete={clientService.remove} isAdmin={isAdmin} /></div>}
-          {currentView === 'Corretores' && <div className="p-8 bg-[#F3F4F6] min-h-full"><GenericCrud title="Corretores" data={brokers} type="broker" onSave={d => d.id ? brokerService.update(d.id, d) : brokerService.create(d)} onDelete={brokerService.remove} isAdmin={isAdmin} /></div>}
-          {currentView === 'Properties' && <div className="p-8 bg-[#F3F4F6] min-h-full"><GenericCrud title="Imóveis" data={properties} type="property" onSave={d => d.id ? propertyService.update(d.id, d) : propertyService.create(d)} onDelete={propertyService.remove} isAdmin={isAdmin} /></div>}
+          {currentView === 'Clientes' && <div className="p-8 bg-[#F3F4F6] min-h-full"><GenericCrud title="Clientes" data={clients} type="client" onSave={d => d.id ? clientService.update(d.id, d) : clientService.create(d)} onDelete={clientService.remove} isAdmin={isAdmin} brokers={brokers} properties={properties} banks={banks} /></div>}
+          {currentView === 'Corretores' && <div className="p-8 bg-[#F3F4F6] min-h-full"><GenericCrud title="Corretores" data={brokers} type="broker" onSave={d => d.id ? brokerService.update(d.id, d) : brokerService.create(d)} onDelete={brokerService.remove} isAdmin={isAdmin} leads={leads} properties={properties} /></div>}
+          {currentView === 'Properties' && <div className="p-8 bg-[#F3F4F6] min-h-full"><GenericCrud title="Imóveis" data={properties} type="property" onSave={d => d.id ? propertyService.update(d.id, d) : propertyService.create(d)} onDelete={propertyService.remove} isAdmin={isAdmin} companies={companies} /></div>}
           {currentView === 'Bancos' && <div className="p-8 bg-[#F3F4F6] min-h-full"><GenericCrud title="Bancos" data={banks} type="bank" onSave={d => d.id ? bankService.update(d.id, d) : bankService.create(d)} onDelete={bankService.remove} isAdmin={isAdmin} /></div>}
           {currentView === 'Construtoras' && <div className="p-8 bg-[#F3F4F6] min-h-full"><GenericCrud title="Construtoras" data={companies} type="company" onSave={d => d.id ? companyService.update(d.id, d) : companyService.create(d)} onDelete={companyService.remove} isAdmin={isAdmin} /></div>}
         </main>

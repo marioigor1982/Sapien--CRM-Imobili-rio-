@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { Lead, Client, Broker, Property, Bank, ConstructionCompany, LeadPhase, LeadStatus } from '../types';
-import { Eye, Edit2, Trash2, Zap, Clock, User, Briefcase, ChevronDown, ChevronUp, Calendar } from 'lucide-react';
+import { Lead, Client, Broker, Property, Bank, ConstructionCompany, LeadPhase, LeadStatus, PHASES_ORDER } from '../types';
+import { Eye, Edit2, Trash2, Zap, Clock, User, Briefcase, ChevronDown, ChevronUp, Calendar, ArrowRight, CheckCircle2 } from 'lucide-react';
 
 interface LeadTableProps {
   leads: Lead[];
@@ -23,7 +23,7 @@ const LeadTable: React.FC<LeadTableProps> = ({
   const [expandedLead, setExpandedLead] = useState<string | null>(null);
 
   const getStatusEmoji = (lead: Lead) => {
-    const currentHistory = lead.history.find(h => h.phase === lead.currentPhase);
+    const currentHistory = lead.history?.find(h => h.phase === lead.currentPhase);
     const startDate = currentHistory ? currentHistory.startDate : lead.createdAt;
     const diff = Date.now() - new Date(startDate).getTime();
     const isUrgent = diff > 10 * 24 * 60 * 60 * 1000;
@@ -43,15 +43,29 @@ const LeadTable: React.FC<LeadTableProps> = ({
   };
 
   const formatDate = (dateStr: string) => {
+    if (!dateStr) return '---';
     const d = new Date(dateStr);
     return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const handleQuickAdvance = (e: React.MouseEvent, lead: Lead) => {
+    e.stopPropagation();
+    const currentIndex = PHASES_ORDER.indexOf(lead.currentPhase);
+    if (currentIndex < PHASES_ORDER.length - 1) {
+      const nextPhase = PHASES_ORDER[currentIndex + 1];
+      if (confirm(`Deseja avançar o lead para a fase: ${nextPhase}?`)) {
+        updatePhase(lead.id, nextPhase);
+      }
+    } else {
+      alert("Este lead já está na fase final do pipeline.");
+    }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
         <div className="space-y-1">
-          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Operações em Tempo Real</h3>
+          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Operações em Lista</h3>
           <h2 className="text-2xl font-black text-slate-900 tracking-tighter">Gestão de Leads Cloud</h2>
         </div>
         <button 
@@ -59,7 +73,7 @@ const LeadTable: React.FC<LeadTableProps> = ({
           className="flex items-center space-x-3 bg-[#8B0000] text-white px-8 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl hover:bg-black transition-all"
         >
           <Zap size={16} />
-          <span>Inserir Novo Lead</span>
+          <span>Inserir Novo Lead Cloud</span>
         </button>
       </div>
 
@@ -68,18 +82,21 @@ const LeadTable: React.FC<LeadTableProps> = ({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100">
-                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status / Proponente</th>
-                <th className="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Corretor</th>
+                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Proponente / Status</th>
+                <th className="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Corretor Responsável</th>
                 <th className="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Fase Atual</th>
-                <th className="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Ativo VGV</th>
-                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Tratativa</th>
+                <th className="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Ativo / VGV</th>
+                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Ações de Tratativa</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {leads.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-20 text-center text-slate-300 font-black uppercase text-xs tracking-widest opacity-30">
-                    Nenhum lead encontrado no Sapien Cloud
+                  <td colSpan={5} className="py-24 text-center">
+                    <div className="flex flex-col items-center opacity-20">
+                      <Briefcase size={48} className="mb-4" />
+                      <p className="font-black uppercase text-xs tracking-widest">Nenhum lead encontrado no Sapien Cloud</p>
+                    </div>
                   </td>
                 </tr>
               ) : leads.map(lead => {
@@ -90,77 +107,104 @@ const LeadTable: React.FC<LeadTableProps> = ({
 
                 return (
                   <React.Fragment key={lead.id}>
-                    <tr className="hover:bg-slate-50/50 transition-colors group">
+                    <tr className="hover:bg-slate-50/50 transition-colors group cursor-pointer" onClick={() => onViewLead?.(lead)}>
                       <td className="px-8 py-5">
                         <div className="flex items-center space-x-4">
-                          <span className="text-lg">{getStatusEmoji(lead)}</span>
-                          <div className="flex flex-col">
-                            <span className="font-black text-slate-900 text-sm">{client?.name || 'Cliente Externo'}</span>
-                            <span className="text-[9px] font-bold text-slate-400 uppercase">{client?.taxId || 'S/ DOC'}</span>
+                          <span className="text-xl shrink-0">{getStatusEmoji(lead)}</span>
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-black text-slate-900 text-sm truncate uppercase">{client?.name || 'Cliente Externo'}</span>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{client?.taxId || 'S/ DOCUMENTO'}</span>
                           </div>
                         </div>
                       </td>
                       
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-2">
-                           <Briefcase size={14} className="text-[#8B0000]" />
-                           <span className="text-xs font-black text-slate-600 uppercase tracking-tighter">{broker?.name || '---'}</span>
+                           <div className="p-1.5 bg-red-50 text-[#8B0000] rounded-lg">
+                              <User size={12} />
+                           </div>
+                           <span className="text-[10px] font-black text-slate-600 uppercase tracking-tighter truncate max-w-[150px]">
+                              {broker?.name || 'Não Vinculado'}
+                           </span>
                         </div>
                       </td>
 
                       <td className="px-6 py-5 text-center">
-                        <span className="px-3 py-1.5 bg-slate-100 text-slate-600 text-[9px] font-black uppercase rounded-lg border border-slate-200 tracking-tighter">
+                        <div className="inline-flex items-center px-3 py-1.5 bg-slate-100 text-slate-600 text-[9px] font-black uppercase rounded-lg border border-slate-200 tracking-tighter">
+                          <Clock size={10} className="mr-1.5" />
                           {lead.currentPhase}
-                        </span>
+                        </div>
                       </td>
 
                       <td className="px-6 py-5">
                         <div className="flex flex-col">
                           <span className="text-xs font-black text-[#8B0000]">{formatCurrency(property?.value || 0)}</span>
-                          <span className="text-[9px] font-bold text-slate-400 truncate max-w-[150px]">{property?.title}</span>
+                          <span className="text-[9px] font-bold text-slate-400 truncate max-w-[180px] uppercase">{property?.title || 'Sem Ativo'}</span>
                         </div>
                       </td>
 
                       <td className="px-8 py-5 text-right">
-                        <div className="flex items-center justify-end space-x-2">
+                        <div className="flex items-center justify-end space-x-2" onClick={e => e.stopPropagation()}>
                           <button 
                             onClick={() => setExpandedLead(isExpanded ? null : lead.id)}
-                            className="p-2 text-slate-300 hover:text-slate-600 transition-colors"
+                            className={`p-2 rounded-xl transition-all ${isExpanded ? 'bg-[#8B0000] text-white shadow-lg' : 'text-slate-300 hover:text-slate-600 hover:bg-slate-100'}`}
                             title="Ver Evolução"
                           >
-                            {isExpanded ? <ChevronUp size={18} /> : <Clock size={18} />}
+                            <History size={18} />
                           </button>
+                          
+                          <button 
+                            onClick={(e) => handleQuickAdvance(e, lead)}
+                            className="p-2 text-slate-300 hover:text-green-600 hover:bg-green-50 rounded-xl transition-all"
+                            title="Avançar Próxima Fase"
+                          >
+                            <ArrowRight size={18} />
+                          </button>
+
                           <button 
                             onClick={() => onViewLead?.(lead)}
-                            className="flex items-center gap-2 bg-[#8B0000] text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase shadow-lg hover:bg-black transition-all"
+                            className="flex items-center gap-2 bg-[#8B0000] text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase shadow-lg hover:scale-105 transition-all"
                           >
                             <Zap size={14} /> Tratar
                           </button>
-                          <button onClick={() => onDeleteLead(lead.id)} className="p-2 text-slate-300 hover:text-red-600"><Trash2 size={16} /></button>
+                          
+                          <button onClick={() => onDeleteLead(lead.id)} className="p-2 text-slate-300 hover:text-red-600 transition-colors"><Trash2 size={18} /></button>
                         </div>
                       </td>
                     </tr>
                     
                     {isExpanded && (
-                      <tr className="bg-slate-50/80">
-                        <td colSpan={5} className="px-10 py-8 border-l-4 border-[#8B0000]">
-                          <div className="space-y-4">
-                            <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.3em] mb-4">Evolução de Fases (Histórico Digital)</h4>
+                      <tr className="bg-slate-50/80 animate-in slide-in-from-top-2 duration-300">
+                        <td colSpan={5} className="px-10 py-10 border-l-8 border-[#8B0000]">
+                          <div className="space-y-6">
+                            <div className="flex items-center justify-between">
+                               <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.3em] flex items-center gap-2">
+                                 <History size={16} className="text-[#8B0000]" /> Linha do Tempo de Evolução Digital
+                               </h4>
+                               <span className="text-[9px] font-black text-slate-400 uppercase">Auditado em tempo real</span>
+                            </div>
+                            
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                              {lead.history.map((hist, idx) => (
-                                <div key={idx} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden">
-                                  <div className={`absolute top-0 left-0 w-1 h-full ${hist.endDate ? 'bg-green-500' : 'bg-[#8B0000]'}`}></div>
-                                  <p className="text-[9px] font-black text-[#8B0000] uppercase mb-1">{hist.phase}</p>
-                                  <div className="space-y-1">
-                                    <p className="text-[10px] font-bold text-slate-600 flex items-center gap-1">
-                                      <Clock size={10} /> Início: {formatDate(hist.startDate)}
-                                    </p>
+                              {(lead.history || []).map((hist, idx) => (
+                                <div key={idx} className="bg-white p-5 rounded-3xl border border-slate-200 shadow-soft relative overflow-hidden group hover:border-[#8B0000] transition-colors">
+                                  <div className={`absolute top-0 left-0 w-1.5 h-full ${hist.endDate ? 'bg-green-500' : 'bg-[#8B0000] animate-pulse'}`}></div>
+                                  <p className="text-[10px] font-black text-[#8B0000] uppercase mb-3 tracking-tighter">{hist.phase}</p>
+                                  <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                       <span className="text-[8px] font-black text-slate-300 uppercase">Abertura</span>
+                                       <span className="text-[10px] font-bold text-slate-600">{formatDate(hist.startDate)}</span>
+                                    </div>
                                     {hist.endDate && (
-                                      <p className="text-[10px] font-bold text-green-600 flex items-center gap-1">
-                                        <CheckCircle size={10} /> Fim: {formatDate(hist.endDate)}
-                                      </p>
+                                      <div className="flex items-center justify-between border-t border-slate-50 pt-2">
+                                         <span className="text-[8px] font-black text-green-400 uppercase">Encerramento</span>
+                                         <span className="text-[10px] font-bold text-green-700">{formatDate(hist.endDate)}</span>
+                                      </div>
                                     )}
-                                    <p className="text-[9px] font-black uppercase text-slate-400 mt-2">Status: {hist.status}</p>
+                                    <div className="mt-3 flex justify-between items-center">
+                                       <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${hist.endDate ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                          {hist.status}
+                                       </span>
+                                    </div>
                                   </div>
                                 </div>
                               ))}
@@ -180,8 +224,8 @@ const LeadTable: React.FC<LeadTableProps> = ({
   );
 };
 
-const CheckCircle = ({ size }: { size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+const History = ({ size, className }: { size: number, className?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
 );
 
 export default LeadTable;
