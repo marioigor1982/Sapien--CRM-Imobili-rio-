@@ -122,28 +122,45 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
   };
 
   const handleQuickAdd = async (quickType: string, quickData: any) => {
+    if (!isAdmin && !editingItem) {
+       // Permite cadastro rápido se for novo item, mas serviços precisam existir
+    }
+    
     setLoading(true);
     try {
       let res;
-      if (quickType === 'company') res = await companyService.create(quickData);
-      else if (quickType === 'property') {
+      if (quickType === 'company' && companyService) {
+        res = await companyService.create(quickData);
+        if (res && res.id) {
+           setFormData(prev => ({...prev, constructionCompanyId: res.id}));
+        }
+      } 
+      else if (quickType === 'property' && propertyService) {
         const { type: pType, neighborhood, city, state } = quickData;
         const autoTitle = `${pType || ''} ${neighborhood || ''} ${city || ''} ${state || ''}`.trim().replace(/\s+/g, ' ');
         quickData.title = autoTitle;
         res = await propertyService.create(quickData);
+        if (res && res.id) {
+           setFormData(prev => ({...prev, propertyId: res.id}));
+        }
       }
-      else if (quickType === 'broker') res = await brokerService.create(quickData);
-      else if (quickType === 'bank') res = await bankService.create(quickData);
+      else if (quickType === 'broker' && brokerService) {
+        res = await brokerService.create(quickData);
+        if (res && res.id) {
+           setFormData(prev => ({...prev, brokerId: res.id}));
+        }
+      }
+      else if (quickType === 'bank' && bankService) {
+        res = await bankService.create(quickData);
+        if (res && res.id) {
+           setFormData(prev => ({...prev, bankId: res.id}));
+        }
+      }
       
-      if (res && res.id) {
-        if (quickType === 'company') setFormData({...formData, constructionCompanyId: res.id});
-        if (quickType === 'property') setFormData({...formData, propertyId: res.id});
-        if (quickType === 'broker') setFormData({...formData, brokerId: res.id});
-        if (quickType === 'bank') setFormData({...formData, bankId: res.id});
-      }
       setIsQuickAddOpen(null);
     } catch (e) {
-      alert("Erro no cadastro rápido.");
+      console.error(e);
+      alert("Erro no cadastro rápido. Verifique se todos os serviços foram carregados.");
     } finally {
       setLoading(false);
     }
@@ -166,7 +183,6 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
     let recebido = 0;
 
     const aReceberPhases = [
-      // Fixed ABERTURA_CREDITO to SIMULACAO_COLETA
       LeadPhase.SIMULACAO_COLETA,
       LeadPhase.APROVACAO_CREDITO,
       LeadPhase.VISITA_IMOVEL,
@@ -227,7 +243,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
           <InputField label="Renda (Mensal)" type="number" value={formData.income} onChange={v => setFormData({...formData, income: Number(v)})} />
           
           <div className="border-t border-gray-100 pt-6 mt-6 space-y-6">
-            <h4 className="text-[10px] font-black text-[#8B0000] uppercase tracking-[0.4em]">Vínculos Preferenciais Cloud</h4>
+            <h4 className="text-[10px] font-black text-[#8B0000] uppercase tracking-[0.4em]">Vínculos Cloud (Imóvel, Construtora e Bancos)</h4>
             <div className="grid grid-cols-1 gap-4">
                <SelectField 
                 label="Imóvel de Interesse" 
@@ -238,20 +254,27 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
               />
               <div className="grid grid-cols-2 gap-4">
                 <SelectField 
+                  label="Construtora" 
+                  value={formData.constructionCompanyId} 
+                  options={companies.map(c => ({id: c.id, label: c.name}))} 
+                  onChange={v => setFormData({...formData, constructionCompanyId: v})}
+                  onQuickAdd={() => setIsQuickAddOpen('company')}
+                />
+                <SelectField 
                   label="Corretor" 
                   value={formData.brokerId} 
                   options={brokers.map(b => ({id: b.id, label: b.name}))} 
                   onChange={v => setFormData({...formData, brokerId: v})}
                   onQuickAdd={() => setIsQuickAddOpen('broker')}
                 />
-                <SelectField 
-                  label="Banco" 
-                  value={formData.bankId} 
-                  options={banks.map(b => ({id: b.id, label: b.name}))} 
-                  onChange={v => setFormData({...formData, bankId: v})}
-                  onQuickAdd={() => setIsQuickAddOpen('bank')}
-                />
               </div>
+              <SelectField 
+                label="Banco" 
+                value={formData.bankId} 
+                options={banks.map(b => ({id: b.id, label: b.name}))} 
+                onChange={v => setFormData({...formData, bankId: v})}
+                onQuickAdd={() => setIsQuickAddOpen('bank')}
+              />
             </div>
           </div>
         </>
@@ -305,13 +328,6 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
               <InputField label="Bairro" value={formData.neighborhood} onChange={v => setFormData({...formData, neighborhood: v})} />
               <InputField label="Cidade" value={formData.city} onChange={v => setFormData({...formData, city: v})} />
               <InputField label="UF" value={formData.state} onChange={v => setFormData({...formData, state: v})} />
-            </div>
-            
-            <div className="p-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-               <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 italic">Título Gerado:</p>
-               <p className="text-xs font-black text-[#8B0000]">
-                  {`${formData.type || ''} ${formData.neighborhood || ''} ${formData.city || ''} ${formData.state || ''}`.trim() || 'Aguardando dados de localização...'}
-               </p>
             </div>
           </div>
 
@@ -488,6 +504,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
           onSave={(d: any) => handleQuickAdd(isQuickAddOpen, d)} 
           companies={companies}
           PROPERTY_TYPES={PROPERTY_TYPES}
+          onQuickAddCompany={() => setIsQuickAddOpen('company')}
         />
       )}
 
@@ -718,7 +735,7 @@ const PhotoUploader: React.FC<{ photos: string[]; onUpdate: (photos: string[]) =
         <input 
           type="text" 
           placeholder="Cole a URL da imagem aqui..."
-          className="flex-1 border border-gray-200 rounded-xl p-3 text-sm outline-none bg-gray-50 font-bold"
+          className="flex-1 border border-gray-200 rounded-xl p-3.5 text-sm outline-none bg-gray-50 font-bold"
           value={imgUrlInput}
           onChange={e => setImgUrlInput(e.target.value)}
         />
@@ -758,8 +775,9 @@ const QuickAddModal: React.FC<{
   onClose: () => void, 
   onSave: (d: any) => void, 
   companies?: ConstructionCompany[],
-  PROPERTY_TYPES: string[]
-}> = ({type, onClose, onSave, companies, PROPERTY_TYPES}) => {
+  PROPERTY_TYPES: string[],
+  onQuickAddCompany: () => void
+}> = ({type, onClose, onSave, companies, PROPERTY_TYPES, onQuickAddCompany}) => {
   const [data, setData] = useState<any>({
     type: "Apartamento",
     photos: [],
@@ -779,7 +797,7 @@ const QuickAddModal: React.FC<{
         </div>
         
         <div className="flex-1 overflow-y-auto p-8">
-          <form onSubmit={e => { e.preventDefault(); onSave(data); }} className="space-y-8">
+          <form onSubmit={e => { e.preventDefault(); onSave(data); }} id="quickAddForm" className="space-y-8">
             {type === 'company' && (
               <div className="space-y-6">
                 <InputField label="Razão Social" value={data.name} onChange={v => setData({...data, name: v})} />
@@ -799,7 +817,7 @@ const QuickAddModal: React.FC<{
                     <div className="space-y-1">
                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tipo</label>
                       <select 
-                        className="w-full border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900 font-bold" 
+                        className="w-full border border-gray-200 rounded-xl p-3.5 text-sm focus:ring-2 focus:ring-[#8B0000] outline-none bg-white text-gray-900 font-bold" 
                         value={data.type} 
                         onChange={e => setData({...data, type: e.target.value})}
                       >
@@ -808,13 +826,13 @@ const QuickAddModal: React.FC<{
                     </div>
                     <InputField label="Valor Venda (R$)" type="number" value={data.value} onChange={v => setData({...data, value: Number(v)})} />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Construtora</label>
-                    <select className="w-full border border-gray-200 rounded-xl p-3 text-sm bg-white font-bold outline-none" value={data.constructionCompanyId} onChange={e => setData({...data, constructionCompanyId: e.target.value})}>
-                      <option value="">Selecione...</option>
-                      {companies?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                  </div>
+                  <SelectField 
+                    label="Construtora" 
+                    value={data.constructionCompanyId} 
+                    options={companies?.map(c => ({id: c.id, label: c.name})) || []} 
+                    onChange={v => setData({...data, constructionCompanyId: v})}
+                    onQuickAdd={onQuickAddCompany}
+                  />
                 </div>
 
                 <div className="space-y-4">
@@ -859,10 +877,11 @@ const QuickAddModal: React.FC<{
         <div className="p-8 border-t border-gray-100 bg-white shrink-0">
            <button 
             type="button"
+            form="quickAddForm"
             onClick={() => onSave(data)}
             className="w-full py-4 bg-[#8B0000] text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl hover:bg-[#6b0000] transition-all"
            >
-              Salvar Cadastro Completo
+              Salvar Cadastro Rápido
            </button>
         </div>
       </div>

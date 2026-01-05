@@ -112,6 +112,7 @@ export interface Client {
   propertyId?: string;
   brokerId?: string;
   bankId?: string;
+  constructionCompanyId?: string;
   createdAt?: string;
 }
 
