@@ -1,7 +1,7 @@
 
 import { db } from "./firebase";
 import { 
-  collection, addDoc, getDocs, updateDoc, 
+  collection, addDoc, getDocs, setDoc, // Usando setDoc para robustez (upsert)
   deleteDoc, doc, onSnapshot, query, serverTimestamp,
   orderBy, Timestamp 
 } from "firebase/firestore";
@@ -26,18 +26,31 @@ const createService = (collectionName: string) => {
       return snap.docs.map(d => ({ id: d.id, ...d.data() }));
     },
     update: async (id: string, data: any) => {
+      // 1. Validar o ID: Verifique se a variável que contém o ID não está vazia.
+      if (!id || typeof id !== 'string' || id.trim() === '') {
+        console.error("Tentativa de atualização sem ID válido:", collectionName);
+        throw new Error("ID do documento inválido ou vazio.");
+      }
+
       const docRef = doc(db, collectionName, id);
       const { id: _, ...cleanData } = data;
-      return await updateDoc(docRef, {
-        ...cleanData,
-        updatedAt: serverTimestamp()
-      });
+
+      // 2. Tratar a inexistência e merge: Usando setDoc com { merge: true }
+      try {
+        return await setDoc(docRef, {
+          ...cleanData,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+      } catch (e) {
+        console.error(`Erro ao salvar no Firestore (${collectionName}):`, e);
+        throw e;
+      }
     },
     remove: async (id: string) => {
+      if (!id) return;
       return await deleteDoc(doc(db, collectionName, id));
     },
     subscribe: (callback: (data: any[]) => void) => {
-      // Using query to sort by created time if needed
       const q = query(ref); 
       return onSnapshot(q, (snap) => {
         const data = snap.docs.map(d => {
@@ -45,7 +58,6 @@ const createService = (collectionName: string) => {
           return { 
             id: d.id, 
             ...docData,
-            // Convert Firestore Timestamps to ISO strings for internal state consistency if needed
             createdAt: docData.createdAt instanceof Timestamp ? docData.createdAt.toDate().toISOString() : docData.createdAt
           };
         });

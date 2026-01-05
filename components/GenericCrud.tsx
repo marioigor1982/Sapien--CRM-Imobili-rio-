@@ -83,7 +83,6 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
       setFormData({ ...item });
     } else {
       setEditingItem(null);
-      // Inicialização completa para evitar campos 'undefined' que quebram o Firestore
       let defaults: any = {};
       if (type === 'client') { 
         defaults = { name: '', taxId: '', phone: '', email: '', income: 0, status: 'Ativo' }; 
@@ -112,11 +111,12 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
     e.preventDefault();
     setLoading(true);
     
-    // Preparação e limpeza dos dados
+    // Preparação e limpeza rigorosa dos dados
     let finalData: any = {};
     Object.keys(formData).forEach(key => {
       let val = formData[key];
-      // Remover campos nulos ou undefined para compatibilidade com Firebase
+      
+      // Ignorar campos vazios ou indefinidos para evitar erro 400
       if (val === undefined || val === null) return;
       
       // Forçar Uppercase em strings (exceto e-mails)
@@ -127,14 +127,19 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
       }
     });
 
+    // Se estiver editando, garantir que o ID está presente no objeto final para o serviço
+    if (editingItem?.id) {
+        finalData.id = editingItem.id;
+    }
+
     try {
       if (onSave) {
         await onSave(finalData);
         setIsModalOpen(false);
       }
     } catch (err: any) {
-      console.error("ERRO CRÍTICO NO SALVAMENTO FIRESTORE:", err);
-      alert(`ERRO AO SALVAR NO CLOUD: ${err.message || 'Verifique sua conexão ou permissões.'}`);
+      console.error("FALHA AO SALVAR NO CLOUD:", err);
+      alert(`FALHA NA OPERAÇÃO CLOUD: ${err.message || 'Verifique sua conexão ou se o ID é válido.'}`);
     } finally {
       setLoading(false);
     }
