@@ -27,58 +27,56 @@
                         "body": ["Noto Sans", "sans-serif"],
                         "sans": ["Inter", "sans-serif"]
                     },
-                    borderRadius: {
-                        "DEFAULT": "0.5rem",
-                        "lg": "0.5rem",
-                        "xl": "0.75rem",
-                        "2xl": "1rem",
-                        "3xl": "1.5rem",
-                        "full": "9999px"
-                    },
-                    animation: {
-                        'gradient-slow': 'gradient-shift 8s ease infinite',
-                        'float': 'float 6s ease-in-out infinite',
-                    },
-                    keyframes: {
-                        'gradient-shift': {
-                            '0%, 100%': { 'background-position': '0% 50%' },
-                            '50%': { 'background-position': '100% 50%' }
-                        },
-                        'float': {
-                            '0%, 100%': { transform: 'translateY(0)' },
-                            '50%': { transform: 'translateY(-10px)' },
-                        }
-                    },
-                    boxShadow: {
-                        'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
-                    }
                 },
             },
         }
     </script>
     <style>
-        .smoky-glass {
-            background: rgba(22, 17, 17, 0.75);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
-        
-        .input-glass {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+        /* GLOBAL UPPERCASE FORCE */
+        input:not([type="email"]), textarea, select {
+            text-transform: uppercase !important;
         }
 
-        .bg-animated {
-            background: linear-gradient(-45deg, #ea2a33, #211111, #8f8f8f, #211111);
-            background-size: 400% 400%;
+        /* ESTILO DA LISTA SUSPENSA IBGE */
+        .lista-municipios {
+            list-style: none;
+            border: 1px solid #e2e8f0;
+            max-height: 250px;
+            overflow-y: auto;
+            margin: 0;
+            padding: 0;
+            background: #fff;
+            position: absolute;
+            width: 100%;
+            z-index: 999;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            margin-top: 4px;
+        }
+
+        .lista-municipios li {
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+            color: #1e293b;
+            text-transform: uppercase;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .lista-municipios li:last-child {
+            border-bottom: none;
+        }
+
+        .lista-municipios li:hover {
+            background: #fef2f2;
+            color: #8b0000;
         }
 
         /* SAP Fiori inspired scrollbar */
         ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
+            width: 6px;
+            height: 6px;
         }
         ::-webkit-scrollbar-track {
             background: transparent;
@@ -89,14 +87,6 @@
         }
         ::-webkit-scrollbar-thumb:hover {
             background: #ea2a33;
-        }
-
-        /* GLOBAL UPPERCASE FORCE */
-        input, textarea, select {
-            text-transform: uppercase !important;
-        }
-        ::placeholder {
-            text-transform: none !important;
         }
     </style>
 <script type="importmap">

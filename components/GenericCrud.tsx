@@ -2,8 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Plus, Edit2, Trash2, Search, X, Image as ImageIcon, 
-  Eye, Landmark, Upload, Building2,
-  Wallet, Briefcase, MapPin, AlertCircle, Lock
+  Eye, Landmark, Building2, Wallet, Briefcase, Zap, Clock, Lock
 } from 'lucide-react';
 import { LeadPhase, ConstructionCompany, Lead, Property, Broker, Client, Bank } from '../types';
 
@@ -56,13 +55,13 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
   const [loading, setLoading] = useState(false);
   const [municipiosIBGE, setMunicipiosIBGE] = useState<IBGEMunicipio[]>([]);
 
-  // Carregamento da API do IBGE
+  // CARREGA MUNICÍPIOS (IBGE) - Conforme código fornecido
   useEffect(() => {
     const fetchMunicipios = async () => {
       try {
         const response = await fetch("https://servicodados.ibge.gov.br/api/v1/localidades/municipios");
-        const rawData = await response.json();
-        const formatados = rawData.map((item: any) => ({
+        const dados = await response.json();
+        const formatados = dados.map((item: any) => ({
           municipio: item.nome.toUpperCase(),
           estado: item.microrregiao.mesorregiao.UF.nome.toUpperCase(),
           uf: item.microrregiao.mesorregiao.UF.sigla.toUpperCase()
@@ -83,26 +82,6 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
       return values.includes(term);
     });
   }, [data, searchTerm]);
-
-  const handleQuickAdd = async (qType: string, qData: any) => {
-    let service;
-    let field = '';
-    switch(qType) {
-      case 'company': service = companyService; field = 'constructionCompanyId'; break;
-      case 'property': service = propertyService; field = 'propertyId'; break;
-      case 'broker': service = brokerService; field = 'brokerId'; break;
-      case 'bank': service = bankService; field = 'bankId'; break;
-    }
-    if (service) {
-      try {
-        const result = await service.create(qData);
-        setFormData(prev => ({ ...prev, [field]: result.id }));
-        setIsQuickAddOpen(null);
-      } catch (e) {
-        alert("FALHA AO CADASTRAR ITEM RAPIDAMENTE.");
-      }
-    }
-  };
 
   const handleOpenModal = (item: any = null) => {
     if (item) {
@@ -133,7 +112,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
     setLoading(true);
     let finalData = { ...formData };
     
-    // Forçar uppercase em todos os campos de string
+    // Forçar uppercase em todos os campos de string antes de salvar
     Object.keys(finalData).forEach(key => {
       if (typeof finalData[key] === 'string') {
         finalData[key] = finalData[key].toUpperCase();
@@ -152,7 +131,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
         setIsModalOpen(false);
       }
     } catch (err) {
-      alert("ERRO AO SALVAR DADOS NO FIRESTORE.");
+      alert("ERRO AO SALVAR NO CLOUD.");
     } finally {
       setLoading(false);
     }
@@ -160,8 +139,8 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
 
   const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
-  // Componente Reutilizável de Input de Cidade com Lista Inteligente
-  const SmartCityInput = ({ value, ufValue, onSelect, label }: { value: string, ufValue: string, onSelect: (city: string, uf: string) => void, label: string }) => {
+  // Componente de Input Inteligente Cidade/UF - Estilo SAP Cloud
+  const SmartCityInput = ({ value, onSelect, label }: { value: string, onSelect: (city: string, uf: string) => void, label: string }) => {
     const [search, setSearch] = useState(value || '');
     const [isOpen, setIsOpen] = useState(false);
 
@@ -177,36 +156,34 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
         <div className="relative">
           <input 
             type="text" 
-            placeholder={`DIGITE A ${label}...`}
+            placeholder={`BUSCAR ${label}...`}
             value={search} 
             onInput={e => {
               const el = e.target as HTMLInputElement;
-              el.value = el.value.toUpperCase();
+              el.value = el.value.toUpperCase(); // Forçar Uppercase conforme código
               setSearch(el.value);
               setIsOpen(true);
             }}
             onFocus={() => setIsOpen(true)}
+            onBlur={() => setTimeout(() => setIsOpen(false), 200)} // Delay para permitir clique
             className="w-full border border-gray-200 rounded-xl p-3.5 text-sm font-bold uppercase outline-none focus:ring-2 focus:ring-[#8B0000] bg-white text-gray-900 shadow-sm"
           />
           {isOpen && filtered.length > 0 && (
-            <div className="absolute z-[200] w-full bg-white border border-gray-100 rounded-2xl shadow-2xl mt-1 max-h-60 overflow-y-auto divide-y divide-gray-50 border-t-0">
+            <ul className="lista-municipios">
               {filtered.map((item, idx) => (
-                <div 
+                <li 
                   key={idx} 
-                  className="px-5 py-3 hover:bg-red-50 cursor-pointer text-[10px] font-black text-slate-700 uppercase flex justify-between items-center group"
                   onMouseDown={(e) => {
-                    // Usar onMouseDown para disparar antes do onBlur
-                    e.preventDefault();
+                    e.preventDefault(); // Evitar onBlur disparar antes
                     onSelect(item.municipio, item.uf);
                     setSearch(item.municipio);
                     setIsOpen(false);
                   }}
                 >
-                  <span>{item.municipio} - {item.estado}</span>
-                  <span className="text-gray-300 group-hover:text-[#8B0000]">{item.uf}</span>
-                </div>
+                  {item.municipio} - {item.estado} ({item.uf})
+                </li>
               ))}
-            </div>
+            </ul>
           )}
         </div>
       </div>
@@ -223,7 +200,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
             <InputField label="COMISSÃO (%)" type="number" step="0.1" value={formData.commissionRate} onChange={v => setFormData({...formData, commissionRate: Number(v)})} />
           </div>
           <InputField label="TELEFONE" value={formData.phone} onChange={v => setFormData({...formData, phone: v})} />
-          <InputField label="EMAIL PROFISSIONAL" type="email" value={formData.email} onChange={v => setFormData({...formData, email: v})} />
+          <InputField label="EMAIL" type="email" value={formData.email} onChange={v => setFormData({...formData, email: v})} />
         </div>
       );
       case 'client': return (
@@ -235,13 +212,15 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
             <InputField label="EMAIL" type="email" value={formData.email} onChange={v => setFormData({...formData, email: v})} />
           </div>
           <InputField label="RENDA MENSAL" type="number" value={formData.income} onChange={v => setFormData({...formData, income: Number(v)})} />
-          <div className="pt-6 border-t border-gray-100 space-y-4">
-            <h4 className="text-[10px] font-black text-[#8B0000] uppercase tracking-[0.4em]">VÍNCULOS CLOUD</h4>
-            <SelectField label="IMÓVEL" value={formData.propertyId} options={properties.map(p => ({id: p.id, label: p.title}))} onChange={v => setFormData({...formData, propertyId: v})} onQuickAdd={() => setIsQuickAddOpen('property')} />
-            <div className="grid grid-cols-2 gap-4">
-              <SelectField label="CONSTRUTORA" value={formData.constructionCompanyId} options={companies.map(c => ({id: c.id, label: c.name}))} onChange={v => setFormData({...formData, constructionCompanyId: v})} onQuickAdd={() => setIsQuickAddOpen('company')} />
-              <SelectField label="CORRETOR" value={formData.brokerId} options={brokers.map(b => ({id: b.id, label: b.name}))} onChange={v => setFormData({...formData, brokerId: v})} onQuickAdd={() => setIsQuickAddOpen('broker')} />
-            </div>
+          <div className="pt-6 border-t border-gray-100">
+             <h4 className="text-[10px] font-black text-[#8B0000] uppercase tracking-widest mb-4">DADOS DE ATENDIMENTO</h4>
+             <div className="grid grid-cols-1 gap-4">
+               <SelectField label="IMÓVEL DE INTERESSE" value={formData.propertyId} options={properties.map(p => ({id: p.id, label: p.title}))} onChange={v => setFormData({...formData, propertyId: v})} onQuickAdd={() => setIsQuickAddOpen('property')} />
+               <div className="grid grid-cols-2 gap-4">
+                 <SelectField label="CORRETOR" value={formData.brokerId} options={brokers.map(b => ({id: b.id, label: b.name}))} onChange={v => setFormData({...formData, brokerId: v})} onQuickAdd={() => setIsQuickAddOpen('broker')} />
+                 <SelectField label="BANCO" value={formData.bankId} options={banks.map(b => ({id: b.id, label: b.name}))} onChange={v => setFormData({...formData, bankId: v})} onQuickAdd={() => setIsQuickAddOpen('bank')} />
+               </div>
+             </div>
           </div>
         </div>
       );
@@ -250,8 +229,8 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
           <InputField label="RAZÃO SOCIAL" value={formData.name} onChange={v => setFormData({...formData, name: v})} />
           <InputField label="CNPJ" value={formData.cnpj} onChange={v => setFormData({...formData, cnpj: v})} />
           <div className="grid grid-cols-2 gap-4">
-            <SmartCityInput label="CIDADE" value={formData.city} ufValue={formData.state} onSelect={(c, u) => setFormData({...formData, city: c, state: u})} />
-            <InputField label="UF" value={formData.state} onChange={v => setFormData({...formData, state: v})} />
+            <SmartCityInput label="CIDADE" value={formData.city} onSelect={(c, u) => setFormData({...formData, city: c, state: u})} />
+            <InputField label="ESTADO (UF)" value={formData.state} onChange={v => setFormData({...formData, state: v})} />
           </div>
           <InputField label="ENDEREÇO" value={formData.address} onChange={v => setFormData({...formData, address: v})} />
         </div>
@@ -272,7 +251,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
           <div className="grid grid-cols-3 gap-3">
             <InputField label="BAIRRO" value={formData.neighborhood} onChange={v => setFormData({...formData, neighborhood: v})} />
             <div className="col-span-1">
-              <SmartCityInput label="CIDADE" value={formData.city} ufValue={formData.state} onSelect={(c, u) => setFormData({...formData, city: c, state: u})} />
+              <SmartCityInput label="CIDADE" value={formData.city} onSelect={(c, u) => setFormData({...formData, city: c, state: u})} />
             </div>
             <InputField label="UF" value={formData.state} onChange={v => setFormData({...formData, state: v})} />
           </div>
@@ -281,7 +260,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
       );
       case 'bank': return (
         <div className="space-y-6">
-          <InputField label="NOME DO BANCO" value={formData.name} onChange={v => setFormData({...formData, name: v})} />
+          <InputField label="RAZÃO BANCÁRIA" value={formData.name} onChange={v => setFormData({...formData, name: v})} />
           <InputField label="AGÊNCIA" value={formData.agency} onChange={v => setFormData({...formData, agency: v})} />
           <InputField label="URL LOGO" value={formData.logo} onChange={v => setFormData({...formData, logo: v})} />
           <InputField label="EMAIL GERÊNCIA" type="email" value={formData.email} onChange={v => setFormData({...formData, email: v})} />
@@ -295,7 +274,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-           <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em] mb-1">GESTÃO SAP CLOUD</h3>
+           <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em] mb-1">MÓDULO DE GESTÃO SAP CLOUD</h3>
            <h2 className="text-3xl font-black text-gray-900 tracking-tighter uppercase">{title}</h2>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
@@ -303,7 +282,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={20} />
             <input 
               type="text" 
-              placeholder={`FILTRAR...`} 
+              placeholder={`FILTRAR ${title.toUpperCase()}...`} 
               value={searchTerm} 
               onInput={e => setSearchTerm((e.target as HTMLInputElement).value.toUpperCase())}
               className="pl-12 pr-6 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#8B0000] w-full md:w-80 bg-white text-gray-900 font-bold uppercase shadow-sm" 
@@ -319,11 +298,11 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-100">
-              {title === 'Clientes' && ['NOME', 'CPF/CNPJ', 'TELEFONE', 'RENDA', 'STATUS'].map(h => <th key={h} className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">{h}</th>)}
+              {title === 'Clientes' && ['NOME', 'CPF/CNPJ', 'TELEFONE', 'RENDA'].map(h => <th key={h} className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">{h}</th>)}
               {title === 'Imóveis' && ['DESCRIÇÃO', 'TIPO', 'VALOR', 'LOCALIZAÇÃO'].map(h => <th key={h} className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">{h}</th>)}
               {title === 'Corretores' && ['NOME', 'CRECI', 'COMISSÃO (%)', 'TELEFONE'].map(h => <th key={h} className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">{h}</th>)}
               {title === 'Bancos' && ['LOGO', 'BANCO', 'AGÊNCIA', 'TELEFONE'].map(h => <th key={h} className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">{h}</th>)}
-              {title === 'Construtoras' && ['NOME', 'CNPJ', 'LOCALIDADE', 'CONTATO'].map(h => <th key={h} className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">{h}</th>)}
+              {title === 'Construtoras' && ['NOME', 'CNPJ', 'MUNICÍPIO', 'CONTATO'].map(h => <th key={h} className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">{h}</th>)}
               <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">AÇÕES</th>
             </tr>
           </thead>
@@ -336,7 +315,6 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
                     <td className="px-8 py-5 uppercase text-gray-500">{item.taxId}</td>
                     <td className="px-8 py-5 uppercase text-gray-500">{item.phone}</td>
                     <td className="px-8 py-5 font-bold">{formatCurrency(item.income)}</td>
-                    <td className="px-8 py-5"><span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-black uppercase">{item.status}</span></td>
                   </>
                 )}
                 {title === 'Imóveis' && (
@@ -347,27 +325,11 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
                     <td className="px-8 py-5 uppercase text-gray-500">{item.city}/{item.state}</td>
                   </>
                 )}
-                {title === 'Corretores' && (
-                  <>
-                    <td className="px-8 py-5 font-bold uppercase">{item.name}</td>
-                    <td className="px-8 py-5 uppercase text-gray-500">{item.creci}</td>
-                    <td className="px-8 py-5 font-bold uppercase">{item.commissionRate}%</td>
-                    <td className="px-8 py-5 uppercase text-gray-500">{item.phone}</td>
-                  </>
-                )}
-                {title === 'Construtoras' && (
-                  <>
-                    <td className="px-8 py-5 font-bold uppercase">{item.name}</td>
-                    <td className="px-8 py-5 uppercase text-gray-500">{item.cnpj}</td>
-                    <td className="px-8 py-5 font-bold uppercase">{item.city} / {item.state}</td>
-                    <td className="px-8 py-5 uppercase text-gray-500">{item.phone}</td>
-                  </>
-                )}
                 <td className="px-8 py-5 text-right whitespace-nowrap">
                   <div className="flex items-center justify-end space-x-2">
-                    <button onClick={() => { setViewingItem(item); setIsViewModalOpen(true); }} className="p-2 text-gray-400 hover:text-[#8B0000]"><Eye size={18} /></button>
-                    <button onClick={() => handleOpenModal(item)} className="p-2 text-gray-400 hover:text-black"><Edit2 size={18} /></button>
-                    {isAdmin && <button onClick={() => onDelete && onDelete(item.id)} className="p-2 text-gray-400 hover:text-red-600"><Trash2 size={18} /></button>}
+                    <button onClick={() => { setViewingItem(item); setIsViewModalOpen(true); }} className="p-2 text-gray-400 hover:text-[#8B0000] transition-colors"><Eye size={18} /></button>
+                    <button onClick={() => handleOpenModal(item)} className="p-2 text-gray-400 hover:text-black transition-colors"><Edit2 size={18} /></button>
+                    {isAdmin && <button onClick={() => onDelete && onDelete(item.id)} className="p-2 text-gray-400 hover:text-red-600 transition-colors"><Trash2 size={18} /></button>}
                   </div>
                 </td>
               </tr>
@@ -389,7 +351,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
                 <div className="flex justify-end space-x-4 mt-8 pt-8 border-t border-gray-100">
                   <button type="button" onClick={() => setIsModalOpen(false)} className="px-8 py-3 text-gray-400 font-black uppercase text-[10px] tracking-widest">CANCELAR</button>
                   <button type="submit" disabled={loading} className="px-10 py-3 bg-[#8B0000] text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl">
-                    {loading ? 'SALVANDO...' : 'SALVAR NO FIRESTORE'}
+                    {loading ? 'PROCESSANDO...' : 'SALVAR NO FIRESTORE'}
                   </button>
                 </div>
               </form>
@@ -402,9 +364,20 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
         <QuickAddModal 
           type={isQuickAddOpen} 
           onClose={() => setIsQuickAddOpen(null)} 
-          onSave={(d: any) => handleQuickAdd(isQuickAddOpen, d)}
+          onSave={async (d: any) => {
+            let res;
+            if (isQuickAddOpen === 'company' && companyService) res = await companyService.create(d);
+            if (isQuickAddOpen === 'property' && propertyService) res = await propertyService.create(d);
+            if (isQuickAddOpen === 'broker' && brokerService) res = await brokerService.create(d);
+            if (isQuickAddOpen === 'bank' && bankService) res = await bankService.create(d);
+            
+            if (res && res.id) {
+               const field = isQuickAddOpen === 'company' ? 'constructionCompanyId' : isQuickAddOpen === 'property' ? 'propertyId' : isQuickAddOpen === 'broker' ? 'brokerId' : 'bankId';
+               setFormData((prev: any) => ({...prev, [field]: res.id}));
+            }
+            setIsQuickAddOpen(null);
+          }}
           companies={companies}
-          municipiosIBGE={municipiosIBGE}
           SmartCityInput={SmartCityInput}
         />
       )}
@@ -420,7 +393,7 @@ const QuickAddModal = ({ type, onClose, onSave, companies, SmartCityInput }: any
       <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
         <div className="bg-[#1F1F1F] px-8 py-6 flex items-center justify-between text-white">
           <h3 className="font-black uppercase tracking-widest text-xs">CADASTRO RÁPIDO: {type.toUpperCase()}</h3>
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full"><X size={20} /></button>
+          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={20} /></button>
         </div>
         <div className="flex-1 overflow-y-auto p-8 space-y-6">
           {type === 'company' && (
@@ -428,7 +401,7 @@ const QuickAddModal = ({ type, onClose, onSave, companies, SmartCityInput }: any
               <InputField label="RAZÃO SOCIAL" value={data.name} onChange={(v: string) => setData({...data, name: v})} />
               <InputField label="CNPJ" value={data.cnpj} onChange={(v: string) => setData({...data, cnpj: v})} />
               <div className="grid grid-cols-2 gap-4">
-                <SmartCityInput label="CIDADE" value={data.city} ufValue={data.state} onSelect={(c:any, u:any) => setData({...data, city: c, state: u})} />
+                <SmartCityInput label="CIDADE" value={data.city} onSelect={(c:any, u:any) => setData({...data, city: c, state: u})} />
                 <InputField label="UF" value={data.state} onChange={(v: string) => setData({...data, state: v})} />
               </div>
             </>
@@ -442,11 +415,11 @@ const QuickAddModal = ({ type, onClose, onSave, companies, SmartCityInput }: any
                       {PROPERTY_TYPES.map(pt => <option key={pt} value={pt}>{pt}</option>)}
                     </select>
                  </div>
-                 <InputField label="VALOR (R$)" type="number" value={data.value} onChange={(v: number) => setData({...data, value: Number(v)})} />
+                 <InputField label="VALOR VENDA" type="number" value={data.value} onChange={(v: number) => setData({...data, value: Number(v)})} />
               </div>
               <InputField label="ENDEREÇO" value={data.address} onChange={(v: string) => setData({...data, address: v})} />
               <div className="grid grid-cols-2 gap-4">
-                <SmartCityInput label="CIDADE" value={data.city} ufValue={data.state} onSelect={(c:any, u:any) => setData({...data, city: c, state: u})} />
+                <SmartCityInput label="CIDADE" value={data.city} onSelect={(c:any, u:any) => setData({...data, city: c, state: u})} />
                 <InputField label="UF" value={data.state} onChange={(v: string) => setData({...data, state: v})} />
               </div>
             </>
@@ -464,16 +437,16 @@ const PhotoUploader = ({ photos, onUpdate }: any) => {
   const [url, setUrl] = useState('');
   return (
     <div className="space-y-3">
-      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">FOTOS DO ATIVO</label>
+      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">GALERIA DE IMAGENS</label>
       <div className="flex gap-2">
         <input 
           type="text" 
-          placeholder="URL DA IMAGEM..." 
-          className="flex-1 border border-gray-200 rounded-xl p-3 text-sm font-bold uppercase outline-none" 
+          placeholder="COLE A URL DA IMAGEM..." 
+          className="flex-1 border border-gray-200 rounded-xl p-3 text-sm font-bold uppercase outline-none focus:ring-2 focus:ring-[#8B0000]" 
           value={url} 
           onInput={e => setUrl((e.target as HTMLInputElement).value.toUpperCase())}
         />
-        <button type="button" onClick={() => { if(url) { onUpdate([...photos, url]); setUrl(''); } }} className="bg-black text-white px-4 rounded-xl text-[10px] font-black uppercase">ADD</button>
+        <button type="button" onClick={() => { if(url) { onUpdate([...photos, url]); setUrl(''); } }} className="bg-black text-white px-6 rounded-xl text-[10px] font-black uppercase">ADICIONAR</button>
       </div>
     </div>
   );
@@ -483,12 +456,12 @@ const InputField = ({ label, value, onChange, type = "text", step }: any) => (
   <div className="space-y-1.5">
     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{label}</label>
     <input 
-      type={type} step={step} placeholder={`INFORME ${label}...`} 
+      type={type} step={step} placeholder={`DIGITE ${label}...`} 
       value={value || ''} 
       onInput={e => {
         const el = e.target as HTMLInputElement;
-        if (type !== 'number') {
-          el.value = el.value.toUpperCase();
+        if (type !== 'number' && type !== 'email') {
+          el.value = el.value.toUpperCase(); // Forçar Uppercase conforme código fornecido
         }
         onChange(type === 'number' ? Number(el.value) : el.value);
       }}
@@ -503,10 +476,10 @@ const SelectField = ({ label, value, options, onChange, onQuickAdd }: any) => (
     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{label}</label>
     <div className="flex gap-2">
       <select value={value || ''} onChange={e => onChange(e.target.value)} className="flex-1 border border-gray-200 rounded-xl p-3.5 text-sm font-bold bg-white uppercase outline-none focus:ring-2 focus:ring-[#8B0000]">
-        <option value="">SELECIONAR {label}...</option>
+        <option value="">ESCOLHER {label}...</option>
         {options.map((opt:any) => <option key={opt.id} value={opt.id}>{opt.label.toUpperCase()}</option>)}
       </select>
-      <button type="button" onClick={onQuickAdd} className="p-3.5 bg-gray-50 text-[#8B0000] rounded-xl border border-gray-100"><Plus size={22} /></button>
+      <button type="button" onClick={onQuickAdd} className="p-3.5 bg-gray-50 text-[#8B0000] rounded-xl border border-gray-100 hover:bg-red-50 transition-colors"><Plus size={22} /></button>
     </div>
   </div>
 );
