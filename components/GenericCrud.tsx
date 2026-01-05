@@ -51,7 +51,6 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
   const [loading, setLoading] = useState(false);
   const [municipiosIBGE, setMunicipiosIBGE] = useState<IBGEMunicipio[]>([]);
 
-  // CARREGA MUNICÍPIOS (IBGE) - Sincronizado com o código solicitado
   useEffect(() => {
     const carregarMunicipios = async () => {
       try {
@@ -84,18 +83,25 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
       setFormData({ ...item });
     } else {
       setEditingItem(null);
-      const defaults: any = {};
-      if (type === 'client') { defaults.status = 'Ativo'; defaults.income = 0; }
-      if (type === 'broker') { defaults.commissionRate = 0; }
-      if (type === 'bank') { defaults.logo = ''; }
-      if (type === 'property') { 
-        defaults.value = 0; 
-        defaults.photos = []; 
-        defaults.type = "APARTAMENTO"; 
-        defaults.state = "";
-        defaults.city = "";
-        defaults.neighborhood = "";
-        defaults.constructionCompanyId = "";
+      // Inicialização completa para evitar campos 'undefined' que quebram o Firestore
+      let defaults: any = {};
+      if (type === 'client') { 
+        defaults = { name: '', taxId: '', phone: '', email: '', income: 0, status: 'Ativo' }; 
+      }
+      else if (type === 'broker') { 
+        defaults = { name: '', creci: '', phone: '', email: '', commissionRate: 0 }; 
+      }
+      else if (type === 'bank') { 
+        defaults = { name: '', agency: '', city: '', state: '', logo: '' }; 
+      }
+      else if (type === 'company') { 
+        defaults = { name: '', cnpj: '', city: '', state: '', address: '', neighborhood: '', phone: '', email: '' }; 
+      }
+      else if (type === 'property') { 
+        defaults = { 
+          title: '', value: 0, photos: [], type: "APARTAMENTO", 
+          state: "", city: "", neighborhood: "", address: "", constructionCompanyId: "" 
+        }; 
       }
       setFormData(defaults);
     }
@@ -105,12 +111,19 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    let finalData = { ...formData };
     
-    // Forçar uppercase final antes do save
-    Object.keys(finalData).forEach(key => {
-      if (typeof finalData[key] === 'string' && !key.toLowerCase().includes('email')) {
-        finalData[key] = finalData[key].toUpperCase();
+    // Preparação e limpeza dos dados
+    let finalData: any = {};
+    Object.keys(formData).forEach(key => {
+      let val = formData[key];
+      // Remover campos nulos ou undefined para compatibilidade com Firebase
+      if (val === undefined || val === null) return;
+      
+      // Forçar Uppercase em strings (exceto e-mails)
+      if (typeof val === 'string' && !key.toLowerCase().includes('email')) {
+        finalData[key] = val.toUpperCase();
+      } else {
+        finalData[key] = val;
       }
     });
 
@@ -119,8 +132,9 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
         await onSave(finalData);
         setIsModalOpen(false);
       }
-    } catch (err) {
-      alert("ERRO AO SALVAR NO CLOUD.");
+    } catch (err: any) {
+      console.error("ERRO CRÍTICO NO SALVAMENTO FIRESTORE:", err);
+      alert(`ERRO AO SALVAR NO CLOUD: ${err.message || 'Verifique sua conexão ou permissões.'}`);
     } finally {
       setLoading(false);
     }
@@ -128,10 +142,13 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
 
   const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
-  // COMPONENTE DE BUSCA INTELIGENTE (MUNICIPIO -> UF)
   const SmartCityInput = ({ cityValue, ufValue, onSelect, label }: { cityValue: string, ufValue: string, onSelect: (city: string, uf: string) => void, label: string }) => {
     const [search, setSearch] = useState(cityValue || '');
     const [isOpen, setIsOpen] = useState(false);
+
+    useEffect(() => {
+        setSearch(cityValue || '');
+    }, [cityValue]);
 
     const filtered = useMemo(() => {
       if (search.length < 2) return [];
@@ -185,7 +202,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
           <InputField label="NOME DO CORRETOR" value={formData.name} onChange={v => setFormData({...formData, name: v})} />
           <div className="grid grid-cols-2 gap-4">
             <InputField label="CRECI" value={formData.creci} onChange={v => setFormData({...formData, creci: v})} />
-            <InputField label="COMISSÃO (%)" type="number" step="0.1" value={formData.commissionRate} onChange={v => setFormData({...formData, commissionRate: Number(v)})} />
+            <InputField label="COMISSÃO (%)" type="number" step="0.1" value={formData.commissionRate} onChange={v => setFormData({...formData, commissionRate: v})} />
           </div>
           <InputField label="TELEFONE" value={formData.phone} onChange={v => setFormData({...formData, phone: v})} />
           <InputField label="EMAIL" type="email" value={formData.email} onChange={v => setFormData({...formData, email: v})} />
@@ -199,7 +216,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
             <InputField label="TELEFONE" value={formData.phone} onChange={v => setFormData({...formData, phone: v})} />
             <InputField label="EMAIL" type="email" value={formData.email} onChange={v => setFormData({...formData, email: v})} />
           </div>
-          <InputField label="RENDA MENSAL" type="number" value={formData.income} onChange={v => setFormData({...formData, income: Number(v)})} />
+          <InputField label="RENDA MENSAL" type="number" value={formData.income} onChange={v => setFormData({...formData, income: v})} />
         </div>
       );
       case 'company': return (
@@ -215,6 +232,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
       );
       case 'property': return (
         <div className="space-y-6">
+          <InputField label="TÍTULO DO ANÚNCIO" value={formData.title} onChange={v => setFormData({...formData, title: v})} />
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">TIPO</label>
@@ -222,7 +240,7 @@ const GenericCrud: React.FC<GenericCrudProps> = ({
                 {PROPERTY_TYPES.map(pt => <option key={pt} value={pt}>{pt}</option>)}
               </select>
             </div>
-            <InputField label="VALOR VENDA (R$)" type="number" value={formData.value} onChange={v => setFormData({...formData, value: Number(v)})} />
+            <InputField label="VALOR VENDA (R$)" type="number" value={formData.value} onChange={v => setFormData({...formData, value: v})} />
           </div>
           <InputField label="ENDEREÇO" value={formData.address} onChange={v => setFormData({...formData, address: v})} />
           <div className="grid grid-cols-4 gap-3">
@@ -359,13 +377,15 @@ const InputField = ({ label, value, onChange, type = "text", step }: any) => (
     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{label}</label>
     <input 
       type={type} step={step} placeholder={`DIGITE ${label}...`} 
-      value={value || ''} 
+      value={value === 0 ? 0 : (value || '')} 
       onInput={e => {
         const el = e.target as HTMLInputElement;
+        let val: string | number = el.value;
         if (type !== 'email') {
-          el.value = el.value.toUpperCase(); // Forçar uppercase em tempo real conforme código solicitado
+          val = val.toUpperCase();
+          el.value = val;
         }
-        onChange(type === 'number' ? Number(el.value) : el.value);
+        onChange(type === 'number' ? (val === '' ? 0 : Number(val)) : val);
       }}
       className="w-full border border-gray-200 rounded-xl p-3.5 text-sm font-bold outline-none focus:ring-2 focus:ring-[#ea2a33] bg-white text-gray-900 uppercase shadow-sm"
       required={type !== 'number'}
