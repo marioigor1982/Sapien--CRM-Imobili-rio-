@@ -198,6 +198,12 @@ const App: React.FC = () => {
         {selectedLead && (
           <LeadDetailModal 
             lead={selectedLead}
+            isAdmin={isAdmin}
+            clients={clients}
+            brokers={brokers}
+            properties={properties}
+            banks={banks}
+            companies={companies}
             client={clients.find(c => c.id === selectedLead.clientId)}
             property={properties.find(p => p.id === selectedLead.propertyId)}
             bank={banks.find(b => b.id === selectedLead.bankId)}
